@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
+type SortDirection = "asc" | "desc";
 
 type Filters = {
   search: string;
@@ -12,6 +13,7 @@ type Filters = {
   minLogP: string;
   excludeLowQuality: boolean;
   sort: SortOption;
+  sortDirection: SortDirection;
   limit: number;
 };
 
@@ -34,6 +36,8 @@ type Study = {
   pvalue_mlog: string | null;
   or_or_beta: string | null;
   risk_allele_frequency: string | null;
+  strongest_snp_risk_allele: string | null;
+  snps: string | null;
   sampleSize: number | null;
   sampleSizeLabel: string;
   pValueNumeric: number | null;
@@ -60,13 +64,68 @@ const defaultFilters: Filters = {
   minLogP: "6",
   excludeLowQuality: true,
   sort: "relevance",
+  sortDirection: "desc",
   limit: 75,
 };
+
+type ConfidencePreset = {
+  label: string;
+  description: string;
+  values: Partial<Filters>;
+};
+
+const confidencePresets: ConfidencePreset[] = [
+  {
+    label: "High confidence",
+    description: "Large cohorts, strict significance, hide flagged studies",
+    values: {
+      minSampleSize: "5000",
+      maxPValue: "5e-9",
+      minLogP: "9",
+      excludeLowQuality: true,
+      sort: "relevance",
+      sortDirection: "desc",
+    },
+  },
+  {
+    label: "Medium confidence",
+    description: "Well-powered signals with relaxed significance",
+    values: {
+      minSampleSize: "2000",
+      maxPValue: "1e-6",
+      minLogP: "7",
+      excludeLowQuality: true,
+      sort: "power",
+      sortDirection: "desc",
+    },
+  },
+  {
+    label: "Explore all",
+    description: "Show lower confidence signals for hypothesis generation",
+    values: {
+      minSampleSize: "200",
+      maxPValue: "0.05",
+      minLogP: "3",
+      excludeLowQuality: false,
+      sort: "recent",
+      sortDirection: "desc",
+    },
+  },
+];
+
+function InfoIcon({ text }: { text: string }) {
+  return (
+    <span className="info-icon" role="img" aria-label="Help" title={text}>
+      ⓘ
+    </span>
+  );
+}
 
 function buildQuery(filters: Filters): string {
   const params = new URLSearchParams();
   params.set("limit", String(filters.limit));
   params.set("sort", filters.sort);
+  params.set("direction", filters.sortDirection);
   params.set("excludeLowQuality", String(filters.excludeLowQuality));
   if (filters.search.trim()) {
     params.set("search", filters.search.trim());
@@ -176,6 +235,13 @@ export default function HomePage() {
     setFilters(defaultFilters);
   };
 
+  const applyPreset = (preset: ConfidencePreset) => {
+    setFilters((prev) => ({
+      ...prev,
+      ...preset.values,
+    }));
+  };
+
   const summaryText = useMemo(() => {
     if (error) {
       return error;
@@ -215,8 +281,33 @@ export default function HomePage() {
       </header>
 
       <section className="panel">
+        <div className="panel-section presets">
+          <div className="preset-label">
+            Confidence presets <InfoIcon text="Quickly adjust filters to highlight studies by confidence level." />
+          </div>
+          <div className="preset-buttons" role="group" aria-label="Confidence presets">
+            {confidencePresets.map((preset) => {
+              const isActive = Object.entries(preset.values).every(([key, value]) => {
+                return filters[key as keyof Filters] === value;
+              });
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  className={isActive ? "preset-button active" : "preset-button"}
+                  onClick={() => applyPreset(preset)}
+                  title={preset.description}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="panel-section">
-          <label htmlFor="search">Keyword search</label>
+          <label htmlFor="search">
+            Keyword search <InfoIcon text="Search titles, authors, mapped genes, and accessions." />
+          </label>
           <input
             id="search"
             type="search"
@@ -226,19 +317,28 @@ export default function HomePage() {
           />
         </div>
         <div className="panel-section">
-          <label htmlFor="trait">Trait</label>
-          <select id="trait" value={filters.trait} onChange={(event) => updateFilter("trait", event.target.value)}>
-            <option value="">All traits</option>
+          <label htmlFor="trait">
+            Trait <InfoIcon text="Start typing to autocomplete trait labels from the GWAS Catalog." />
+          </label>
+          <input
+            id="trait"
+            type="text"
+            list="trait-options"
+            placeholder="All traits"
+            value={filters.trait}
+            onChange={(event) => updateFilter("trait", event.target.value)}
+          />
+          <datalist id="trait-options">
             {traits.map((traitOption) => (
-              <option key={traitOption} value={traitOption}>
-                {traitOption}
-              </option>
+              <option key={traitOption} value={traitOption} />
             ))}
-          </select>
+          </datalist>
         </div>
         <div className="panel-section inline">
           <div>
-            <label htmlFor="minSample">Minimum discovery sample size</label>
+            <label htmlFor="minSample">
+              Minimum discovery sample size <InfoIcon text="Filter out studies with fewer participants in the discovery cohort." />
+            </label>
             <input
               id="minSample"
               type="number"
@@ -249,7 +349,9 @@ export default function HomePage() {
             />
           </div>
           <div>
-            <label htmlFor="maxPValue">Maximum p-value</label>
+            <label htmlFor="maxPValue">
+              Maximum p-value <InfoIcon text="Set an upper bound on association p-values (supports scientific notation)." />
+            </label>
             <input
               id="maxPValue"
               type="text"
@@ -266,7 +368,9 @@ export default function HomePage() {
             </datalist>
           </div>
           <div>
-            <label htmlFor="minLogP">Minimum −log₁₀(p)</label>
+            <label htmlFor="minLogP">
+              Minimum −log₁₀(p) <InfoIcon text="Highlight more robust signals by requiring a minimum −log10(p) value." />
+            </label>
             <input
               id="minLogP"
               type="number"
@@ -278,7 +382,9 @@ export default function HomePage() {
         </div>
         <div className="panel-section inline">
           <div>
-            <label htmlFor="sort">Sort by</label>
+            <label htmlFor="sort">
+              Sort by <InfoIcon text="Order studies by statistical strength, power, recency, or title." />
+            </label>
             <select id="sort" value={filters.sort} onChange={(event) => updateFilter("sort", event.target.value as SortOption)}>
               <option value="relevance">Relevance (−log₁₀ p)</option>
               <option value="power">Power (sample size)</option>
@@ -287,7 +393,24 @@ export default function HomePage() {
             </select>
           </div>
           <div>
-            <label htmlFor="limit">Results shown</label>
+            <span className="field-label">
+              Sort order <InfoIcon text="Toggle between ascending and descending order for the selected sort field." />
+            </span>
+            <button
+              type="button"
+              className="sort-direction-button"
+              onClick={() =>
+                updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc")
+              }
+              title={`Switch to ${filters.sortDirection === "asc" ? "descending" : "ascending"} order`}
+            >
+              {filters.sortDirection === "asc" ? "Ascending ↑" : "Descending ↓"}
+            </button>
+          </div>
+          <div>
+            <label htmlFor="limit">
+              Results shown <InfoIcon text="Control how many studies are rendered in the table." />
+            </label>
             <select
               id="limit"
               value={filters.limit}
@@ -307,7 +430,9 @@ export default function HomePage() {
               checked={filters.excludeLowQuality}
               onChange={(event) => updateFilter("excludeLowQuality", event.target.checked)}
             />
-            <label htmlFor="qualityToggle">Hide low-confidence studies</label>
+            <label htmlFor="qualityToggle">
+              Hide low-confidence studies <InfoIcon text="Exclude studies flagged for small cohorts or weak significance." />
+            </label>
           </div>
         </div>
       </section>
@@ -328,6 +453,7 @@ export default function HomePage() {
             <tr>
               <th scope="col">Study</th>
               <th scope="col">Trait</th>
+              <th scope="col">Variant</th>
               <th scope="col">Relevance</th>
               <th scope="col">Power</th>
               <th scope="col">Effect</th>
@@ -337,14 +463,14 @@ export default function HomePage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="loading-row">
+                <td colSpan={7} className="loading-row">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && studies.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-row">
+                <td colSpan={7} className="empty-row">
                   No studies found. Try widening your filters.
                 </td>
               </tr>
@@ -357,7 +483,14 @@ export default function HomePage() {
                 const power = study.sampleSizeLabel ?? "—";
                 const effect = study.or_or_beta ?? "—";
                 const quality = study.qualityFlags.length > 0 ? study.qualityFlags.join("; ") : "High confidence";
-                const studyLink = study.link || (study.pubmedid ? `https://pubmed.ncbi.nlm.nih.gov/${study.pubmedid}` : null);
+                const gwasLink = study.study_accession
+                  ? `https://www.ebi.ac.uk/gwas/studies/${study.study_accession}`
+                  : null;
+                const studyLink = gwasLink
+                  || study.link
+                  || (study.pubmedid ? `https://pubmed.ncbi.nlm.nih.gov/${study.pubmedid}` : null);
+                const variantSnp = study.snps ?? "—";
+                const variantGenotype = study.strongest_snp_risk_allele ?? "—";
                 return (
                   <tr key={study.id} className={study.isLowQuality ? "low-quality" : undefined}>
                     <td>
@@ -378,6 +511,16 @@ export default function HomePage() {
                       </div>
                     </td>
                     <td>{trait}</td>
+                    <td>
+                      <div className="variant-cell">
+                        <span className="variant-chip" aria-label="SNP identifier">
+                          {variantSnp}
+                        </span>
+                        <span className="variant-chip secondary" aria-label="Risk allele or genotype">
+                          {variantGenotype}
+                        </span>
+                      </div>
+                    </td>
                     <td>
                       <span className="metric">{relevance}</span>
                       {study.pValueNumeric !== null && (

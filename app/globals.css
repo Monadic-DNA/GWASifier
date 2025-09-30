@@ -106,6 +106,10 @@ button {
   gap: 0.5rem;
 }
 
+.panel-section.presets {
+  gap: 0.75rem;
+}
+
 .panel-section.inline {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -115,6 +119,99 @@ button {
 .panel label {
   font-weight: 600;
   letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.18);
+  color: rgba(125, 211, 252, 0.95);
+  font-size: 0.7rem;
+  cursor: help;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.info-icon:hover {
+  transform: translateY(-1px);
+  background: rgba(56, 189, 248, 0.3);
+}
+
+.preset-label {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preset-button {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.45);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.preset-button:hover {
+  transform: translateY(-1px);
+  background: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 10px 20px -14px rgba(59, 130, 246, 0.8);
+}
+
+.preset-button.active {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.85));
+  border-color: transparent;
+  color: #0f172a;
+  box-shadow: 0 12px 22px -12px rgba(34, 197, 94, 0.8);
+}
+
+.sort-direction-button {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.6);
+  color: inherit;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.sort-direction-button:hover {
+  transform: translateY(-1px);
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.sort-direction-button:focus {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
 }
 
 .panel input,
@@ -214,6 +311,30 @@ tbody tr:hover {
   gap: 0.5rem 1rem;
   font-size: 0.85rem;
   color: rgba(148, 163, 184, 0.85);
+}
+
+.variant-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.variant-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 12px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(59, 130, 246, 0.18);
+  color: rgba(191, 219, 254, 0.95);
+  font-weight: 600;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.variant-chip.secondary {
+  background: rgba(34, 197, 94, 0.18);
+  color: rgba(134, 239, 172, 0.95);
 }
 
 .metric {

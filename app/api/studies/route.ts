@@ -29,6 +29,8 @@ type RawStudy = {
   pvalue_mlog: string | null;
   or_or_beta: string | null;
   risk_allele_frequency: string | null;
+  strongest_snp_risk_allele: string | null;
+  snps: string | null;
 };
 
 type Study = RawStudy & {
@@ -63,6 +65,7 @@ export async function GET(request: NextRequest) {
   const trait = searchParams.get("trait")?.trim();
   const limit = Math.max(10, Math.min(Number(searchParams.get("limit")) || 75, 200));
   const sort = searchParams.get("sort") ?? "relevance";
+  const direction = searchParams.get("direction") === "asc" ? "asc" : "desc";
   const minSampleSize = parseInteger(searchParams.get("minSampleSize"));
   const maxPValueRaw = searchParams.get("maxPValue");
   const minLogPRaw = searchParams.get("minLogP");
@@ -102,7 +105,9 @@ export async function GET(request: NextRequest) {
        p_value,
        pvalue_mlog,
        or_or_beta,
-       risk_allele_frequency
+       risk_allele_frequency,
+       strongest_snp_risk_allele,
+       snps
     FROM gwas_catalog
     ${whereClause}
     LIMIT ?`;
@@ -161,22 +166,26 @@ export async function GET(request: NextRequest) {
   const { count: sourceCount } = countStatement.get(...params) as { count: number };
 
   const sortedStudies = [...studies];
+  const directionFactor = direction === "asc" ? 1 : -1;
+
   switch (sort) {
     case "power":
-      sortedStudies.sort((a, b) => (b.sampleSize ?? 0) - (a.sampleSize ?? 0));
+      sortedStudies.sort((a, b) => directionFactor * ((a.sampleSize ?? 0) - (b.sampleSize ?? 0)));
       break;
     case "recent":
       sortedStudies.sort((a, b) => {
         const aDate = a.date ? Date.parse(a.date) : 0;
         const bDate = b.date ? Date.parse(b.date) : 0;
-        return bDate - aDate;
+        return directionFactor * (aDate - bDate);
       });
       break;
     case "alphabetical":
-      sortedStudies.sort((a, b) => (a.study ?? "").localeCompare(b.study ?? ""));
+      sortedStudies.sort(
+        (a, b) => (a.study ?? "").localeCompare(b.study ?? "") * directionFactor,
+      );
       break;
     default:
-      sortedStudies.sort((a, b) => (b.logPValue ?? -Infinity) - (a.logPValue ?? -Infinity));
+      sortedStudies.sort((a, b) => directionFactor * ((a.logPValue ?? -Infinity) - (b.logPValue ?? -Infinity)));
       break;
   }
 
