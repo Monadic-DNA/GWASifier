@@ -544,22 +544,12 @@ tbody tr:hover {
 }
 
 .low-quality {
-  position: relative;
+  background-color: rgba(239, 68, 68, 0.02);
+  transition: background-color 0.2s ease;
 }
 
-.low-quality::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(239, 68, 68, 0.03);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  border-radius: 4px;
-}
-
-.low-quality:hover::before {
-  opacity: 1;
+.low-quality:hover {
+  background-color: rgba(239, 68, 68, 0.05);
 }
 
 @media (max-width: 768px) {
