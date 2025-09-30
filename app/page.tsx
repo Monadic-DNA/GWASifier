@@ -197,8 +197,7 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [heroCollapsed, setHeroCollapsed] = useState(false);
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [sectionCollapsed, setSectionCollapsed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -371,48 +370,34 @@ export default function HomePage() {
 
   return (
     <main className="page">
-      <header className={`hero ${heroCollapsed ? "collapsed" : ""}`}>
-        <div className="hero-header">
+      <section className={`panel ${sectionCollapsed ? "collapsed" : ""}`}>
+        <div className="panel-header">
           <div className="hero-title-section">
-            {!heroCollapsed && (
+            {!sectionCollapsed && (
               <>
                 <h1>GWAS Catalog Explorer</h1>
                 <p>Explore genetic associations from genome-wide association studies.</p>
               </>
             )}
-            {heroCollapsed && <h2>GWAS Catalog Explorer</h2>}
+            {sectionCollapsed && <h2>GWAS Catalog Explorer</h2>}
           </div>
           <div className="hero-controls">
-            {!heroCollapsed && (
+            {!sectionCollapsed && (
               <button className="reset-button" type="button" onClick={resetFilters}>
                 Reset filters
               </button>
             )}
-            <button 
-              className="collapse-button" 
-              type="button" 
-              onClick={() => setHeroCollapsed(!heroCollapsed)}
-              title={heroCollapsed ? "Show title section" : "Hide title section"}
+            <button
+              className="collapse-button"
+              type="button"
+              onClick={() => setSectionCollapsed(!sectionCollapsed)}
+              title={sectionCollapsed ? "Expand" : "Collapse"}
             >
-              {heroCollapsed ? "↓" : "↑"}
+              {sectionCollapsed ? "↓" : "↑"}
             </button>
           </div>
         </div>
-      </header>
-
-      <section className={`panel ${filtersCollapsed ? "collapsed" : ""}`}>
-        <div className="panel-header">
-          <h3 className="panel-title">Filters</h3>
-          <button 
-            className="collapse-button" 
-            type="button" 
-            onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-            title={filtersCollapsed ? "Show filters" : "Hide filters"}
-          >
-            {filtersCollapsed ? "↓" : "↑"}
-          </button>
-        </div>
-        {!filtersCollapsed && (
+        {!sectionCollapsed && (
           <div className="panel-content">
             <div className="panel-section presets">
               <div className="preset-label">
@@ -470,24 +455,25 @@ export default function HomePage() {
                   ))}
                 </datalist>
               </div>
-            </div>
-            <div className="panel-row">
               <div className="panel-field">
                 <label htmlFor="minSample">
-                  Min sample size <InfoIcon text="Filter studies by discovery cohort size." />
+                  Min samples <InfoIcon text="Filter by discovery cohort size." />
                 </label>
                 <input
                   id="minSample"
                   type="number"
                   min={0}
                   step={100}
+                  placeholder="500"
                   value={filters.minSampleSize}
                   onChange={(event) => updateFilter("minSampleSize", event.target.value)}
                 />
               </div>
+            </div>
+            <div className="panel-row">
               <div className="panel-field">
                 <label htmlFor="maxPValue">
-                  Max p-value <InfoIcon text="Set statistical significance threshold." />
+                  Max p-value <InfoIcon text="Statistical significance threshold." />
                 </label>
                 <select
                   id="maxPValue"
@@ -505,11 +491,9 @@ export default function HomePage() {
                   <option value="5e-9">p ≤ 5×10⁻⁹ (Ultra-stringent)</option>
                 </select>
               </div>
-            </div>
-            <div className="panel-row">
               <div className="panel-field">
                 <label htmlFor="limit">
-                  Results limit <InfoIcon text="Number of studies to show in table." />
+                  Results <InfoIcon text="Number of studies to show." />
                 </label>
                 <select
                   id="limit"
@@ -523,9 +507,6 @@ export default function HomePage() {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="panel-row">
               <div className="panel-field checkbox-field">
                 <input
                   id="genotypeToggle"
@@ -534,7 +515,7 @@ export default function HomePage() {
                   onChange={(event) => updateFilter("excludeMissingGenotype", event.target.checked)}
                 />
                 <label htmlFor="genotypeToggle">
-                  Require genotype <InfoIcon text="Hide associations without a reported SNP risk allele." />
+                  Require genotype <InfoIcon text="Hide associations without SNP risk allele." />
                 </label>
               </div>
             </div>
