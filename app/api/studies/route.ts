@@ -263,6 +263,10 @@ export async function GET(request: NextRequest) {
   }
 
   const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  const isShowingAllStudies = sort === "recent" && !excludeLowQuality && !excludeMissingGenotype &&
+    !minSampleSize && !maxPValueRaw && !minLogPRaw;
+  const orderClause = isShowingAllStudies ? "ORDER BY date DESC" : "";
   const baseQuery = `SELECT rowid AS id,
        study_accession,
        study,
@@ -285,9 +289,11 @@ export async function GET(request: NextRequest) {
        snps
     FROM gwas_catalog
     ${whereClause}
+    ${orderClause}
     LIMIT ?`;
-
-  const rawLimit = Math.min(limit * 4, 800);
+  const rawLimit = isShowingAllStudies
+    ? Math.min(limit * 8, 2000)
+    : Math.min(limit * 4, 800);
 
   const statement = db.prepare(baseQuery);
   const rawRows = statement.all(...params, rawLimit) as RawStudy[];

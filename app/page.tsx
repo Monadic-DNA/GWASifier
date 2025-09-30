@@ -104,6 +104,7 @@ const confidencePresets: ConfidencePreset[] = [
       excludeMissingGenotype: false,
       sort: "recent",
       sortDirection: "desc",
+      limit: 500,
     },
   },
   {
@@ -581,7 +582,9 @@ export default function HomePage() {
                 const trait = study.mapped_trait ?? study.disease_trait ?? "—";
                 const date = study.publicationDate
                   ? new Date(study.publicationDate).toLocaleDateString()
-                  : study.date ?? "—";
+                  : study.date
+                  ? new Date(study.date).toLocaleDateString() || study.date
+                  : "—";
                 const relevance = study.logPValue ? study.logPValue.toFixed(2) : "—";
                 const power = study.sampleSizeLabel ?? "—";
                 const effect = study.or_or_beta ?? "—";
