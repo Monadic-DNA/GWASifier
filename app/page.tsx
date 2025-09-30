@@ -197,6 +197,8 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [heroCollapsed, setHeroCollapsed] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -345,77 +347,107 @@ export default function HomePage() {
 
   return (
     <main className="page">
-      <header className="hero">
-        <div>
-          <h1>GWAS Catalog Explorer</h1>
-          <p>
-            Interactively explore genome-wide association studies with tools for spotlighting the most relevant, well-powered,
-            and statistically robust findings.
-          </p>
-        </div>
-        <div className="hero-actions">
-          <button className="reset-button" type="button" onClick={resetFilters}>
-            Reset filters
-          </button>
+      <header className={`hero ${heroCollapsed ? "collapsed" : ""}`}>
+        <div className="hero-header">
+          <div className="hero-title-section">
+            {!heroCollapsed && (
+              <>
+                <h1>GWAS Catalog Explorer</h1>
+                <p>
+                  Interactively explore genome-wide association studies with tools for spotlighting the most relevant, well-powered,
+                  and statistically robust findings.
+                </p>
+              </>
+            )}
+            {heroCollapsed && <h2>GWAS Catalog Explorer</h2>}
+          </div>
+          <div className="hero-controls">
+            {!heroCollapsed && (
+              <button className="reset-button" type="button" onClick={resetFilters}>
+                Reset filters
+              </button>
+            )}
+            <button 
+              className="collapse-button" 
+              type="button" 
+              onClick={() => setHeroCollapsed(!heroCollapsed)}
+              title={heroCollapsed ? "Show title section" : "Hide title section"}
+            >
+              {heroCollapsed ? "↓" : "↑"}
+            </button>
+          </div>
         </div>
       </header>
 
-      <section className="panel">
-        <div className="panel-section presets">
-          <div className="preset-label">
-            Confidence presets <InfoIcon text="Quickly adjust filters to highlight studies by confidence level." />
-          </div>
-          <div className="preset-buttons" role="group" aria-label="Confidence presets">
-            {confidencePresets.map((preset) => {
-              const isActive =
-                (preset.band === null ? filters.confidenceBand === null : filters.confidenceBand === preset.band) &&
-                Object.entries(preset.values).every(([key, value]) => {
-                  return filters[key as keyof Filters] === value;
-                });
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  className={isActive ? "preset-button active" : "preset-button"}
-                  onClick={() => applyPreset(preset)}
-                  title={preset.description}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
+      <section className={`panel ${filtersCollapsed ? "collapsed" : ""}`}>
+        <div className="panel-header">
+          <h3 className="panel-title">Filters</h3>
+          <button 
+            className="collapse-button" 
+            type="button" 
+            onClick={() => setFiltersCollapsed(!filtersCollapsed)}
+            title={filtersCollapsed ? "Show filters" : "Hide filters"}
+          >
+            {filtersCollapsed ? "↓" : "↑"}
+          </button>
         </div>
-        <div className="panel-section">
-          <label htmlFor="search">
-            Keyword search <InfoIcon text="Search titles, authors, mapped genes, and accessions." />
-          </label>
-          <input
-            id="search"
-            type="search"
-            placeholder="Search studies, authors, genes, or accession IDs"
-            value={filters.search}
-            onChange={(event) => updateFilter("search", event.target.value)}
-          />
-        </div>
-        <div className="panel-section">
-          <label htmlFor="trait">
-            Trait <InfoIcon text="Start typing to autocomplete trait labels from the GWAS Catalog." />
-          </label>
-          <input
-            id="trait"
-            type="text"
-            list="trait-options"
-            placeholder="All traits"
-            value={filters.trait}
-            onChange={(event) => updateFilter("trait", event.target.value)}
-          />
-          <datalist id="trait-options">
-            {traits.map((traitOption) => (
-              <option key={traitOption} value={traitOption} />
-            ))}
-          </datalist>
-        </div>
+        {!filtersCollapsed && (
+          <div className="panel-content">
+            <div className="panel-section presets">
+              <div className="preset-label">
+                Confidence presets <InfoIcon text="Quickly adjust filters to highlight studies by confidence level." />
+              </div>
+              <div className="preset-buttons" role="group" aria-label="Confidence presets">
+                {confidencePresets.map((preset) => {
+                  const isActive =
+                    (preset.band === null ? filters.confidenceBand === null : filters.confidenceBand === preset.band) &&
+                    Object.entries(preset.values).every(([key, value]) => {
+                      return filters[key as keyof Filters] === value;
+                    });
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className={isActive ? "preset-button active" : "preset-button"}
+                      onClick={() => applyPreset(preset)}
+                      title={preset.description}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="panel-section">
+              <label htmlFor="search">
+                Keyword search <InfoIcon text="Search titles, authors, mapped genes, and accessions." />
+              </label>
+              <input
+                id="search"
+                type="search"
+                placeholder="Search studies, authors, genes, or accession IDs"
+                value={filters.search}
+                onChange={(event) => updateFilter("search", event.target.value)}
+              />
+            </div>
+            <div className="panel-section">
+              <label htmlFor="trait">
+                Trait <InfoIcon text="Start typing to autocomplete trait labels from the GWAS Catalog." />
+              </label>
+              <input
+                id="trait"
+                type="text"
+                list="trait-options"
+                placeholder="All traits"
+                value={filters.trait}
+                onChange={(event) => updateFilter("trait", event.target.value)}
+              />
+              <datalist id="trait-options">
+                {traits.map((traitOption) => (
+                  <option key={traitOption} value={traitOption} />
+                ))}
+              </datalist>
+            </div>
         <div className="panel-section inline">
           <div>
             <label htmlFor="minSample">
@@ -510,6 +542,8 @@ export default function HomePage() {
             </label>
           </div>
         </div>
+          </div>
+        )}
       </section>
 
       <section className="summary" aria-live="polite">
