@@ -378,6 +378,21 @@ th {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
+  cursor: help;
+  position: relative;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+th:hover {
+  color: var(--text-primary);
+}
+
+th .info-icon {
+  margin-left: 0.25rem;
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 tbody tr {

@@ -521,13 +521,27 @@ export default function HomePage() {
         <table>
           <thead>
             <tr>
-              <th scope="col">Study</th>
-              <th scope="col">Trait</th>
-              <th scope="col">Variant</th>
-              <th scope="col">Relevance</th>
-              <th scope="col">Power</th>
-              <th scope="col">Effect</th>
-              <th scope="col">Quality</th>
+              <th scope="col" title="The research publication that discovered this genetic association. Click study titles to read the original paper.">
+                Study <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="The health condition, disease, or measurable characteristic that was studied. For example: height, diabetes, or blood pressure.">
+                Trait <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="The specific genetic variant (SNP) associated with the trait. These are locations in DNA where people differ from each other. Click variants to see detailed genetic information.">
+                Variant <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="Statistical strength of the finding. Higher numbers mean stronger evidence that this genetic variant truly affects the trait. Calculated as -log₁₀(p-value).">
+                Relevance <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="How many people were studied. Larger studies (higher power) are more reliable because they can detect smaller effects and are less likely to be false discoveries.">
+                Power <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="How much this genetic variant changes the trait. For diseases, this might be odds ratio (how much more likely you are to get the disease). For measurements like height, it's the average difference.">
+                Effect <span className="info-icon">ⓘ</span>
+              </th>
+              <th scope="col" title="Our assessment of study reliability based on sample size, statistical significance, and data quality. High confidence studies are most trustworthy.">
+                Quality <span className="info-icon">ⓘ</span>
+              </th>
             </tr>
           </thead>
           <tbody>
