@@ -1,0 +1,28 @@
+{
+  "name": "gwasifier",
+  "version": "1.0.0",
+  "description": "Match your DNA data against an open ended catalogue of DNA traits",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "next": "^14.2.33",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.1.15",
+    "@types/react-dom": "^19.1.9",
+    "typescript": "^5.9.2"
+  }
+}
