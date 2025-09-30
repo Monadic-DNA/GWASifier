@@ -298,6 +298,30 @@ export default function HomePage() {
     }));
   };
 
+  const handleColumnSort = (sortKey: SortOption) => {
+    if (filters.sort === sortKey) {
+      // Same column clicked, toggle direction
+      updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // New column clicked, set to desc (most common use case)
+      updateFilter("sort", sortKey);
+      updateFilter("sortDirection", "desc");
+    }
+  };
+
+  const handleStudyColumnSort = () => {
+    // Study column cycles between alphabetical and recent
+    if (filters.sort === "alphabetical") {
+      handleColumnSort("recent");
+    } else if (filters.sort === "recent") {
+      // Toggle direction for recent
+      updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Start with alphabetical
+      handleColumnSort("alphabetical");
+    }
+  };
+
   const summaryText = useMemo(() => {
     if (error) {
       return error;
@@ -353,10 +377,7 @@ export default function HomePage() {
             {!heroCollapsed && (
               <>
                 <h1>GWAS Catalog Explorer</h1>
-                <p>
-                  Interactively explore genome-wide association studies with tools for spotlighting the most relevant, well-powered,
-                  and statistically robust findings.
-                </p>
+                <p>Explore genetic associations from genome-wide association studies.</p>
               </>
             )}
             {heroCollapsed && <h2>GWAS Catalog Explorer</h2>}
@@ -395,7 +416,7 @@ export default function HomePage() {
           <div className="panel-content">
             <div className="panel-section presets">
               <div className="preset-label">
-                Confidence presets <InfoIcon text="Quickly adjust filters to highlight studies by confidence level." />
+                Confidence <InfoIcon text="Quickly adjust filters by confidence level." />
               </div>
               <div className="preset-buttons" role="group" aria-label="Confidence presets">
                 {confidencePresets.map((preset) => {
@@ -418,130 +439,105 @@ export default function HomePage() {
                 })}
               </div>
             </div>
-            <div className="panel-section">
-              <label htmlFor="search">
-                Keyword search <InfoIcon text="Search titles, authors, mapped genes, and accessions." />
-              </label>
-              <input
-                id="search"
-                type="search"
-                placeholder="Search studies, authors, genes, or accession IDs"
-                value={filters.search}
-                onChange={(event) => updateFilter("search", event.target.value)}
-              />
+            <div className="panel-row">
+              <div className="panel-field">
+                <label htmlFor="search">
+                  Search <InfoIcon text="Search titles, authors, genes, accessions." />
+                </label>
+                <input
+                  id="search"
+                  type="search"
+                  placeholder="Keywords..."
+                  value={filters.search}
+                  onChange={(event) => updateFilter("search", event.target.value)}
+                />
+              </div>
+              <div className="panel-field">
+                <label htmlFor="trait">
+                  Trait <InfoIcon text="Autocomplete from GWAS Catalog traits." />
+                </label>
+                <input
+                  id="trait"
+                  type="text"
+                  list="trait-options"
+                  placeholder="All traits"
+                  value={filters.trait}
+                  onChange={(event) => updateFilter("trait", event.target.value)}
+                />
+                <datalist id="trait-options">
+                  {traits.map((traitOption) => (
+                    <option key={traitOption} value={traitOption} />
+                  ))}
+                </datalist>
+              </div>
             </div>
-            <div className="panel-section">
-              <label htmlFor="trait">
-                Trait <InfoIcon text="Start typing to autocomplete trait labels from the GWAS Catalog." />
-              </label>
-              <input
-                id="trait"
-                type="text"
-                list="trait-options"
-                placeholder="All traits"
-                value={filters.trait}
-                onChange={(event) => updateFilter("trait", event.target.value)}
-              />
-              <datalist id="trait-options">
-                {traits.map((traitOption) => (
-                  <option key={traitOption} value={traitOption} />
-                ))}
-              </datalist>
+            <div className="panel-row">
+              <div className="panel-field">
+                <label htmlFor="minSample">
+                  Min sample size <InfoIcon text="Filter studies by discovery cohort size." />
+                </label>
+                <input
+                  id="minSample"
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={filters.minSampleSize}
+                  onChange={(event) => updateFilter("minSampleSize", event.target.value)}
+                />
+              </div>
+              <div className="panel-field">
+                <label htmlFor="maxPValue">
+                  Max p-value <InfoIcon text="Set statistical significance threshold." />
+                </label>
+                <select
+                  id="maxPValue"
+                  value={filters.maxPValue}
+                  onChange={(event) => updateFilter("maxPValue", event.target.value)}
+                >
+                  <option value="">Any significance (including non-significant)</option>
+                  <option value="0.1">p ≤ 0.1 (Trend/suggestive)</option>
+                  <option value="0.05">p ≤ 0.05 (Traditional threshold)</option>
+                  <option value="0.01">p ≤ 0.01 (Strong evidence)</option>
+                  <option value="1e-3">p ≤ 0.001 (Very strong)</option>
+                  <option value="1e-4">p ≤ 1×10⁻⁴ (Extremely strong)</option>
+                  <option value="1e-6">p ≤ 1×10⁻⁶ (Highly significant)</option>
+                  <option value="5e-8">p ≤ 5×10⁻⁸ (Genome-wide significant)</option>
+                  <option value="5e-9">p ≤ 5×10⁻⁹ (Ultra-stringent)</option>
+                </select>
+              </div>
             </div>
-        <div className="panel-section inline">
-          <div>
-            <label htmlFor="minSample">
-              Minimum discovery sample size <InfoIcon text="Filter out studies with fewer participants in the discovery cohort." />
-            </label>
-            <input
-              id="minSample"
-              type="number"
-              min={0}
-              step={100}
-              value={filters.minSampleSize}
-              onChange={(event) => updateFilter("minSampleSize", event.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="maxPValue">
-              Statistical significance <InfoIcon text="Set the minimum level of statistical significance required (lower p-values = more significant)." />
-            </label>
-            <select
-              id="maxPValue"
-              value={filters.maxPValue}
-              onChange={(event) => updateFilter("maxPValue", event.target.value)}
-            >
-              <option value="">Any significance (including non-significant)</option>
-              <option value="1">p ≤ 1.0 (Everything - even random noise)</option>
-              <option value="0.5">p ≤ 0.5 (Coin flip territory)</option>
-              <option value="0.2">p ≤ 0.2 (Weak evidence)</option>
-              <option value="0.1">p ≤ 0.1 (Trend/suggestive)</option>
-              <option value="0.05">p ≤ 0.05 (Traditional threshold)</option>
-              <option value="0.01">p ≤ 0.01 (Strong evidence)</option>
-              <option value="1e-3">p ≤ 0.001 (Very strong)</option>
-              <option value="1e-4">p ≤ 1×10⁻⁴ (Extremely strong)</option>
-              <option value="1e-6">p ≤ 1×10⁻⁶ (Highly significant)</option>
-              <option value="5e-8">p ≤ 5×10⁻⁸ (Genome-wide significant)</option>
-              <option value="5e-9">p ≤ 5×10⁻⁹ (Ultra-stringent)</option>
-            </select>
-          </div>
-        </div>
-        <div className="panel-section inline">
-          <div>
-            <label htmlFor="sort">
-              Sort by <InfoIcon text="Order studies by statistical strength, power, recency, or title." />
-            </label>
-            <select id="sort" value={filters.sort} onChange={(event) => updateFilter("sort", event.target.value as SortOption)}>
-              <option value="relevance">Relevance (−log₁₀ p)</option>
-              <option value="power">Power (sample size)</option>
-              <option value="recent">Most recent</option>
-              <option value="alphabetical">Study title</option>
-            </select>
-          </div>
-          <div>
-            <span className="field-label">
-              Sort order <InfoIcon text="Toggle between ascending and descending order for the selected sort field." />
-            </span>
-            <button
-              type="button"
-              className="sort-direction-button"
-              onClick={() =>
-                updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc")
-              }
-              title={`Switch to ${filters.sortDirection === "asc" ? "descending" : "ascending"} order`}
-            >
-              {filters.sortDirection === "asc" ? "Ascending ↑" : "Descending ↓"}
-            </button>
-          </div>
-          <div>
-            <label htmlFor="limit">
-              Results shown <InfoIcon text="Control how many studies are rendered in the table." />
-            </label>
-            <select
-              id="limit"
-              value={filters.limit}
-              onChange={(event) => updateFilter("limit", Number(event.target.value))}
-            >
-              {[25, 50, 75, 100, 150, 200].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="panel-row">
+              <div className="panel-field">
+                <label htmlFor="limit">
+                  Results limit <InfoIcon text="Number of studies to show in table." />
+                </label>
+                <select
+                  id="limit"
+                  value={filters.limit}
+                  onChange={(event) => updateFilter("limit", Number(event.target.value))}
+                >
+                  {[25, 50, 75, 100, 150, 200].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          <div className="toggle">
-            <input
-              id="genotypeToggle"
-              type="checkbox"
-              checked={filters.excludeMissingGenotype}
-              onChange={(event) => updateFilter("excludeMissingGenotype", event.target.checked)}
-            />
-            <label htmlFor="genotypeToggle">
-              Require recorded genotype <InfoIcon text="Hide associations without a reported SNP risk allele." />
-            </label>
-          </div>
-        </div>
+            <div className="panel-row">
+              <div className="panel-field checkbox-field">
+                <input
+                  id="genotypeToggle"
+                  type="checkbox"
+                  checked={filters.excludeMissingGenotype}
+                  onChange={(event) => updateFilter("excludeMissingGenotype", event.target.checked)}
+                />
+                <label htmlFor="genotypeToggle">
+                  Require genotype <InfoIcon text="Hide associations without a reported SNP risk allele." />
+                </label>
+              </div>
+            </div>
           </div>
         )}
       </section>
@@ -555,8 +551,17 @@ export default function HomePage() {
         <table>
           <thead>
             <tr>
-              <th scope="col" title="The research publication that discovered this genetic association. Click study titles to read the original paper.">
-                Study <span className="info-icon">ⓘ</span>
+              <th
+                scope="col"
+                title="Click to sort by study title or publication date. Cycles between alphabetical and recent."
+                className={`sortable ${filters.sort === "alphabetical" || filters.sort === "recent" ? "sorted" : ""}`}
+                onClick={handleStudyColumnSort}
+              >
+                Study {filters.sort === "recent" && "(by date)"}
+                <span className="info-icon">ⓘ</span>
+                {(filters.sort === "alphabetical" || filters.sort === "recent") && (
+                  <span className="sort-indicator">{filters.sortDirection === "asc" ? " ↑" : " ↓"}</span>
+                )}
               </th>
               <th scope="col" title="The health condition, disease, or measurable characteristic that was studied. For example: height, diabetes, or blood pressure.">
                 Trait <span className="info-icon">ⓘ</span>
@@ -564,11 +569,29 @@ export default function HomePage() {
               <th scope="col" title="The specific genetic variant (SNP) associated with the trait. These are locations in DNA where people differ from each other. Click variants to see detailed genetic information.">
                 Variant <span className="info-icon">ⓘ</span>
               </th>
-              <th scope="col" title="Statistical strength of the finding. Higher numbers mean stronger evidence that this genetic variant truly affects the trait. Calculated as -log₁₀(p-value).">
-                Relevance <span className="info-icon">ⓘ</span>
+              <th
+                scope="col"
+                title="Statistical strength of the finding. Click to sort by relevance (-log₁₀ p-value)."
+                className={`sortable ${filters.sort === "relevance" ? "sorted" : ""}`}
+                onClick={() => handleColumnSort("relevance")}
+              >
+                Relevance
+                <span className="info-icon">ⓘ</span>
+                {filters.sort === "relevance" && (
+                  <span className="sort-indicator">{filters.sortDirection === "asc" ? " ↑" : " ↓"}</span>
+                )}
               </th>
-              <th scope="col" title="How many people were studied. Larger studies (higher power) are more reliable because they can detect smaller effects and are less likely to be false discoveries.">
-                Power <span className="info-icon">ⓘ</span>
+              <th
+                scope="col"
+                title="How many people were studied. Click to sort by sample size (study power)."
+                className={`sortable ${filters.sort === "power" ? "sorted" : ""}`}
+                onClick={() => handleColumnSort("power")}
+              >
+                Power
+                <span className="info-icon">ⓘ</span>
+                {filters.sort === "power" && (
+                  <span className="sort-indicator">{filters.sortDirection === "asc" ? " ↑" : " ↓"}</span>
+                )}
               </th>
               <th scope="col" title="How much this genetic variant changes the trait. For diseases, this might be odds ratio (how much more likely you are to get the disease). For measurements like height, it's the average difference.">
                 Effect <span className="info-icon">ⓘ</span>

@@ -245,6 +245,32 @@ button {
   gap: 1.25rem;
 }
 
+.panel-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.panel-field.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.panel-field.checkbox-field input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent-blue);
+}
+
 .panel label {
   font-weight: 600;
   font-size: 0.9rem;
@@ -465,6 +491,27 @@ th .info-icon {
   vertical-align: middle;
 }
 
+th.sortable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+th.sortable:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+}
+
+th.sortable.sorted {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+}
+
+.sort-indicator {
+  font-weight: bold;
+  color: var(--accent-blue);
+}
+
 tbody tr {
   border-top: 1px solid var(--border-color);
   transition: all 0.2s ease;
@@ -670,6 +717,11 @@ tbody tr:hover {
   .panel-section.inline {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  .panel-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .preset-buttons {
