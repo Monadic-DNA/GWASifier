@@ -10,8 +10,7 @@ export async function GET() {
         `SELECT DISTINCT COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) AS trait
          FROM gwas_catalog
          WHERE COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) IS NOT NULL
-         ORDER BY trait COLLATE NOCASE
-         LIMIT 600`,
+         ORDER BY trait COLLATE NOCASE`,
       )
       .all() as { trait: string | null }[];
 
