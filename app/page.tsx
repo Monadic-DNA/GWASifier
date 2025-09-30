@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
 type SortDirection = "asc" | "desc";
+type ConfidenceBand = "high" | "medium" | "low";
 
 type Filters = {
   search: string;
@@ -12,9 +13,11 @@ type Filters = {
   maxPValue: string;
   minLogP: string;
   excludeLowQuality: boolean;
+  excludeMissingGenotype: boolean;
   sort: SortOption;
   sortDirection: SortDirection;
   limit: number;
+  confidenceBand: ConfidenceBand | null;
 };
 
 type Study = {
@@ -45,6 +48,7 @@ type Study = {
   logPValue: number | null;
   qualityFlags: string[];
   isLowQuality: boolean;
+  confidenceBand: ConfidenceBand;
 };
 
 type StudiesResponse = {
@@ -56,6 +60,13 @@ type StudiesResponse = {
   error?: string;
 };
 
+type QualitySummary = {
+  high: number;
+  medium: number;
+  low: number;
+  flagged: number;
+};
+
 const defaultFilters: Filters = {
   search: "",
   trait: "",
@@ -63,21 +74,25 @@ const defaultFilters: Filters = {
   maxPValue: "5e-8",
   minLogP: "6",
   excludeLowQuality: true,
+  excludeMissingGenotype: true,
   sort: "relevance",
   sortDirection: "desc",
   limit: 75,
+  confidenceBand: null,
 };
 
 type ConfidencePreset = {
   label: string;
   description: string;
-  values: Partial<Filters>;
+  band: ConfidenceBand | null;
+  values: Partial<Omit<Filters, "confidenceBand">>;
 };
 
 const confidencePresets: ConfidencePreset[] = [
   {
     label: "High confidence",
     description: "Large cohorts, strict significance, hide flagged studies",
+    band: "high",
     values: {
       minSampleSize: "5000",
       maxPValue: "5e-9",
@@ -90,6 +105,7 @@ const confidencePresets: ConfidencePreset[] = [
   {
     label: "Medium confidence",
     description: "Well-powered signals with relaxed significance",
+    band: "medium",
     values: {
       minSampleSize: "2000",
       maxPValue: "1e-6",
@@ -100,8 +116,9 @@ const confidencePresets: ConfidencePreset[] = [
     },
   },
   {
-    label: "Explore all",
-    description: "Show lower confidence signals for hypothesis generation",
+    label: "Low confidence",
+    description: "Focus on exploratory signals and flagged studies",
+    band: "low",
     values: {
       minSampleSize: "200",
       maxPValue: "0.05",
@@ -121,12 +138,23 @@ function InfoIcon({ text }: { text: string }) {
   );
 }
 
+function parseVariantIds(snps: string | null): string[] {
+  if (!snps) {
+    return [];
+  }
+  return snps
+    .split(/[;,\s]+/)
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
 function buildQuery(filters: Filters): string {
   const params = new URLSearchParams();
   params.set("limit", String(filters.limit));
   params.set("sort", filters.sort);
   params.set("direction", filters.sortDirection);
   params.set("excludeLowQuality", String(filters.excludeLowQuality));
+  params.set("excludeMissingGenotype", String(filters.excludeMissingGenotype));
   if (filters.search.trim()) {
     params.set("search", filters.search.trim());
   }
@@ -141,6 +169,9 @@ function buildQuery(filters: Filters): string {
   }
   if (filters.minLogP.trim()) {
     params.set("minLogP", filters.minLogP.trim());
+  }
+  if (filters.confidenceBand) {
+    params.set("confidenceBand", filters.confidenceBand);
   }
   return params.toString();
 }
@@ -221,14 +252,27 @@ export default function HomePage() {
     return () => controller.abort();
   }, [filters]);
 
-  const qualitySummary = useMemo(() => {
-    const flagged = studies.filter((study) => study.isLowQuality).length;
-    const highQuality = studies.length - flagged;
-    return { flagged, highQuality };
+  const qualitySummary = useMemo<QualitySummary>(() => {
+    return studies.reduce<QualitySummary>(
+      (acc, study) => {
+        acc[study.confidenceBand] += 1;
+        if (study.isLowQuality) {
+          acc.flagged += 1;
+        }
+        return acc;
+      },
+      { high: 0, medium: 0, low: 0, flagged: 0 },
+    );
   }, [studies]);
 
   const updateFilter = <Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key !== "confidenceBand") {
+        next.confidenceBand = null;
+      }
+      return next;
+    });
   };
 
   const resetFilters = () => {
@@ -239,6 +283,7 @@ export default function HomePage() {
     setFilters((prev) => ({
       ...prev,
       ...preset.values,
+      confidenceBand: preset.band,
     }));
   };
 
@@ -256,6 +301,19 @@ export default function HomePage() {
       `${studies.length} of ${meta.total} quality-filtered studies`,
       `${meta.sourceCount.toLocaleString()} matches before quality filters`,
     ];
+    const breakdown: string[] = [];
+    if (qualitySummary.high > 0) {
+      breakdown.push(`${qualitySummary.high} high`);
+    }
+    if (qualitySummary.medium > 0) {
+      breakdown.push(`${qualitySummary.medium} medium`);
+    }
+    if ((qualitySummary.low > 0 && !filters.excludeLowQuality) || filters.confidenceBand === "low") {
+      breakdown.push(`${qualitySummary.low} low`);
+    }
+    if (breakdown.length > 0) {
+      parts.push(`Confidence mix: ${breakdown.join(", ")}`);
+    }
     if (meta.truncated) {
       parts.push(`showing the top ${meta.limit}`);
     }
@@ -263,7 +321,18 @@ export default function HomePage() {
       parts.push(`${qualitySummary.flagged} flagged as lower confidence`);
     }
     return parts.join(" · ");
-  }, [studies.length, meta, loading, error, qualitySummary.flagged, filters.excludeLowQuality]);
+  }, [
+    studies.length,
+    meta,
+    loading,
+    error,
+    qualitySummary.high,
+    qualitySummary.medium,
+    qualitySummary.low,
+    qualitySummary.flagged,
+    filters.excludeLowQuality,
+    filters.confidenceBand,
+  ]);
 
   return (
     <main className="page">
@@ -287,9 +356,11 @@ export default function HomePage() {
           </div>
           <div className="preset-buttons" role="group" aria-label="Confidence presets">
             {confidencePresets.map((preset) => {
-              const isActive = Object.entries(preset.values).every(([key, value]) => {
-                return filters[key as keyof Filters] === value;
-              });
+              const isActive =
+                (preset.band === null ? filters.confidenceBand === null : filters.confidenceBand === preset.band) &&
+                Object.entries(preset.values).every(([key, value]) => {
+                  return filters[key as keyof Filters] === value;
+                });
               return (
                 <button
                   key={preset.label}
@@ -434,6 +505,17 @@ export default function HomePage() {
               Hide low-confidence studies <InfoIcon text="Exclude studies flagged for small cohorts or weak significance." />
             </label>
           </div>
+          <div className="toggle">
+            <input
+              id="genotypeToggle"
+              type="checkbox"
+              checked={filters.excludeMissingGenotype}
+              onChange={(event) => updateFilter("excludeMissingGenotype", event.target.checked)}
+            />
+            <label htmlFor="genotypeToggle">
+              Require recorded genotype <InfoIcon text="Hide associations without a reported SNP risk allele." />
+            </label>
+          </div>
         </div>
       </section>
 
@@ -482,15 +564,20 @@ export default function HomePage() {
                 const relevance = study.logPValue ? study.logPValue.toFixed(2) : "—";
                 const power = study.sampleSizeLabel ?? "—";
                 const effect = study.or_or_beta ?? "—";
-                const quality = study.qualityFlags.length > 0 ? study.qualityFlags.join("; ") : "High confidence";
                 const gwasLink = study.study_accession
                   ? `https://www.ebi.ac.uk/gwas/studies/${study.study_accession}`
                   : null;
-                const studyLink = gwasLink
-                  || study.link
-                  || (study.pubmedid ? `https://pubmed.ncbi.nlm.nih.gov/${study.pubmedid}` : null);
-                const variantSnp = study.snps ?? "—";
-                const variantGenotype = study.strongest_snp_risk_allele ?? "—";
+                const studyLink =
+                  gwasLink || study.link || (study.pubmedid ? `https://pubmed.ncbi.nlm.nih.gov/${study.pubmedid}` : null);
+                const variantIds = parseVariantIds(study.snps);
+                const variantGenotype = study.strongest_snp_risk_allele?.trim() ?? "";
+                const hasGenotype = variantGenotype.length > 0;
+                const confidenceLabel =
+                  study.confidenceBand === "high"
+                    ? "High confidence"
+                    : study.confidenceBand === "medium"
+                    ? "Medium confidence"
+                    : "Lower confidence";
                 return (
                   <tr key={study.id} className={study.isLowQuality ? "low-quality" : undefined}>
                     <td>
@@ -513,11 +600,28 @@ export default function HomePage() {
                     <td>{trait}</td>
                     <td>
                       <div className="variant-cell">
-                        <span className="variant-chip" aria-label="SNP identifier">
-                          {variantSnp}
-                        </span>
-                        <span className="variant-chip secondary" aria-label="Risk allele or genotype">
-                          {variantGenotype}
+                        <div className="variant-chip-group" aria-label="SNP identifier">
+                          {variantIds.length > 0 ? (
+                            variantIds.map((variantId) => (
+                              <a
+                                key={variantId}
+                                className="variant-chip variant-link"
+                                href={`https://www.ncbi.nlm.nih.gov/snp/${encodeURIComponent(variantId)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {variantId}
+                              </a>
+                            ))
+                          ) : (
+                            <span className="variant-chip variant-chip--placeholder">Not reported</span>
+                          )}
+                        </div>
+                        <span
+                          className={hasGenotype ? "variant-chip secondary" : "variant-chip variant-chip--placeholder"}
+                          aria-label="Risk allele or genotype"
+                        >
+                          {hasGenotype ? variantGenotype : "Not reported"}
                         </span>
                       </div>
                     </td>
@@ -543,7 +647,18 @@ export default function HomePage() {
                       )}
                     </td>
                     <td>
-                      <span className={study.isLowQuality ? "quality-flag" : "quality-good"}>{quality}</span>
+                      <div className="quality-cell">
+                        <span className={`quality-pill ${study.confidenceBand}`}>{confidenceLabel}</span>
+                        {study.qualityFlags.length > 0 && (
+                          <div className="quality-flags">
+                            {study.qualityFlags.map((flag) => (
+                              <span key={flag} className="quality-flag">
+                                {flag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

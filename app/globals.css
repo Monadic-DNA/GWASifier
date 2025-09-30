@@ -316,6 +316,12 @@ tbody tr:hover {
 .variant-cell {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+}
+
+.variant-chip-group {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
@@ -330,11 +336,27 @@ tbody tr:hover {
   font-weight: 600;
   min-width: 0;
   word-break: break-word;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .variant-chip.secondary {
   background: rgba(34, 197, 94, 0.18);
   color: rgba(134, 239, 172, 0.95);
+}
+
+.variant-chip.variant-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -12px rgba(59, 130, 246, 0.8);
+}
+
+.variant-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.variant-chip--placeholder {
+  background: rgba(148, 163, 184, 0.2);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .metric {
@@ -349,22 +371,52 @@ tbody tr:hover {
   color: rgba(148, 163, 184, 0.85);
 }
 
-.quality-good {
-  display: inline-block;
+.quality-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.quality-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.quality-pill.high {
   background: rgba(34, 197, 94, 0.18);
   color: rgba(74, 222, 128, 0.95);
-  font-weight: 600;
+}
+
+.quality-pill.medium {
+  background: rgba(250, 204, 21, 0.18);
+  color: rgba(250, 204, 21, 0.95);
+}
+
+.quality-pill.low {
+  background: rgba(248, 113, 113, 0.16);
+  color: rgba(248, 113, 113, 0.95);
+}
+
+.quality-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .quality-flag {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
   border-radius: 12px;
-  background: rgba(248, 113, 113, 0.16);
+  background: rgba(248, 113, 113, 0.12);
   color: rgba(248, 113, 113, 0.95);
-  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .loading-row,

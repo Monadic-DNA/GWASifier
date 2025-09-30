@@ -10,6 +10,8 @@ import {
   parseSampleSize,
 } from "@/lib/parsing";
 
+type ConfidenceBand = "high" | "medium" | "low";
+
 type RawStudy = {
   id: number;
   study_accession: string | null;
@@ -41,6 +43,7 @@ type Study = RawStudy & {
   logPValue: number | null;
   qualityFlags: string[];
   isLowQuality: boolean;
+  confidenceBand: ConfidenceBand;
 };
 
 function parseInteger(value: string | null): number | null {
@@ -49,6 +52,38 @@ function parseInteger(value: string | null): number | null {
   }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
+}
+
+function determineConfidenceBand(
+  sampleSize: number | null,
+  pValue: number | null,
+  logPValue: number | null,
+  isLowQuality: boolean,
+): ConfidenceBand {
+  if (isLowQuality) {
+    return "low";
+  }
+
+  const meetsHigh =
+    sampleSize !== null &&
+    sampleSize >= 5000 &&
+    logPValue !== null &&
+    logPValue >= 9 &&
+    (pValue === null || pValue <= 5e-9);
+
+  if (meetsHigh) {
+    return "high";
+  }
+
+  const meetsMedium =
+    ((sampleSize ?? 0) >= 2000 || (logPValue ?? 0) >= 7) &&
+    (pValue === null || pValue <= 1e-6);
+
+  if (meetsMedium) {
+    return "medium";
+  }
+
+  return "low";
 }
 
 export async function GET(request: NextRequest) {
@@ -70,6 +105,12 @@ export async function GET(request: NextRequest) {
   const maxPValueRaw = searchParams.get("maxPValue");
   const minLogPRaw = searchParams.get("minLogP");
   const excludeLowQuality = searchParams.get("excludeLowQuality") === "false" ? false : true;
+  const excludeMissingGenotype = searchParams.get("excludeMissingGenotype") === "false" ? false : true;
+  const confidenceBandParam = searchParams.get("confidenceBand");
+  const confidenceBandFilter: ConfidenceBand | null =
+    confidenceBandParam === "high" || confidenceBandParam === "medium" || confidenceBandParam === "low"
+      ? (confidenceBandParam as ConfidenceBand)
+      : null;
 
   const filters: string[] = [];
   const params: unknown[] = [];
@@ -126,6 +167,8 @@ export async function GET(request: NextRequest) {
       const pValueNumeric = parsePValue(row.p_value);
       const logPValue = parseLogPValue(row.pvalue_mlog) ?? (pValueNumeric ? -Math.log10(pValueNumeric) : null);
       const qualityFlags = computeQualityFlags(sampleSize, pValueNumeric, logPValue);
+      const isLowQuality = qualityFlags.length > 0;
+      const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, isLowQuality);
       return {
         ...row,
         sampleSize,
@@ -134,7 +177,8 @@ export async function GET(request: NextRequest) {
         pValueLabel: formatPValue(pValueNumeric),
         logPValue,
         qualityFlags,
-        isLowQuality: qualityFlags.length > 0,
+        isLowQuality,
+        confidenceBand,
       } satisfies Study;
     })
     .filter((row) => {
@@ -157,6 +201,15 @@ export async function GET(request: NextRequest) {
         return false;
       }
       if (excludeLowQuality && row.isLowQuality) {
+        return false;
+      }
+      if (
+        excludeMissingGenotype &&
+        (!row.strongest_snp_risk_allele || row.strongest_snp_risk_allele.trim().length === 0)
+      ) {
+        return false;
+      }
+      if (confidenceBandFilter && row.confidenceBand !== confidenceBandFilter) {
         return false;
       }
       return true;
