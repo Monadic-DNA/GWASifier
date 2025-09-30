@@ -80,67 +80,6 @@ const defaultFilters: Filters = {
   confidenceBand: null,
 };
 
-type ConfidencePreset = {
-  label: string;
-  description: string;
-  band: ConfidenceBand | null;
-  values: Partial<Omit<Filters, "confidenceBand">>;
-};
-
-const confidencePresets: ConfidencePreset[] = [
-  {
-    label: "All studies",
-    description: "Remove filters and browse every study, sorted by the most recent publications.",
-    band: null,
-    values: {
-      search: "",
-      trait: "",
-      minSampleSize: "",
-      maxPValue: "",
-      excludeLowQuality: false,
-      excludeMissingGenotype: false,
-      sort: "recent",
-      sortDirection: "desc",
-      limit: 500,
-    },
-  },
-  {
-    label: "High confidence",
-    description: "Large cohorts, strict significance, hide flagged studies",
-    band: "high",
-    values: {
-      minSampleSize: "5000",
-      maxPValue: "5e-9",
-      excludeLowQuality: true,
-      sort: "relevance",
-      sortDirection: "desc",
-    },
-  },
-  {
-    label: "Medium confidence",
-    description: "Well-powered signals with relaxed significance",
-    band: "medium",
-    values: {
-      minSampleSize: "2000",
-      maxPValue: "1e-6",
-      excludeLowQuality: true,
-      sort: "power",
-      sortDirection: "desc",
-    },
-  },
-  {
-    label: "Low confidence",
-    description: "Focus on exploratory signals and flagged studies",
-    band: "low",
-    values: {
-      minSampleSize: "200",
-      maxPValue: "0.05",
-      excludeLowQuality: false,
-      sort: "recent",
-      sortDirection: "desc",
-    },
-  },
-];
 
 function InfoIcon({ text }: { text: string }) {
   return (
@@ -289,13 +228,6 @@ export default function HomePage() {
     setFilters(defaultFilters);
   };
 
-  const applyPreset = (preset: ConfidencePreset) => {
-    setFilters((prev) => ({
-      ...prev,
-      ...preset.values,
-      confidenceBand: preset.band,
-    }));
-  };
 
   const handleColumnSort = (sortKey: SortOption) => {
     if (filters.sort === sortKey) {
@@ -399,31 +331,6 @@ export default function HomePage() {
         </div>
         {!sectionCollapsed && (
           <div className="panel-content">
-            <div className="panel-section presets">
-              <div className="preset-label">
-                Confidence <InfoIcon text="Quickly adjust filters by confidence level." />
-              </div>
-              <div className="preset-buttons" role="group" aria-label="Confidence presets">
-                {confidencePresets.map((preset) => {
-                  const isActive =
-                    (preset.band === null ? filters.confidenceBand === null : filters.confidenceBand === preset.band) &&
-                    Object.entries(preset.values).every(([key, value]) => {
-                      return filters[key as keyof Filters] === value;
-                    });
-                  return (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      className={isActive ? "preset-button active" : "preset-button"}
-                      onClick={() => applyPreset(preset)}
-                      title={preset.description}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
             <div className="panel-row">
               <div className="panel-field">
                 <label htmlFor="search">
