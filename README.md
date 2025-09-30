@@ -6,11 +6,22 @@ Match your DNA data against an open ended catalogue of DNA traits
 
 ### Preparing local data
 
-Fetch the latest GWAS Catalog data from https://www.ebi.ac.uk/gwas/api/search/downloads/alternative into the `localdata` directory. This is "All associations v1.0.2 - with added ontology annotations, GWAS Catalog study accession numbers and genotyping technology" from https://www.ebi.ac.uk/gwas/docs/file-downloads. 
+Fetch the latest GWAS Catalog data from https://www.ebi.ac.uk/gwas/api/search/downloads/alternative into the `localdata` directory. This is "All associations v1.0.2 - with added ontology annotations, GWAS Catalog study accession numbers and genotyping technology" from https://www.ebi.ac.uk/gwas/docs/file-downloads.
 
 Create a new SQLite database at `localdata/gwas_catalog.sqlite`.
 
 Load the contents of the TSV file into the SQLite database using your favorite method.
+
+### Running the GWAS Catalog Explorer
+
+The repository now includes a Next.js single-page application for exploring studies stored in `localdata/gwas_catalog.sqlite`.
+
+```bash
+npm install
+npm run dev
+```
+
+The development server defaults to http://localhost:3000. You can override the database location by exporting `GWAS_DB_PATH` before starting the server.
 
 ## Citations
 
