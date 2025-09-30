@@ -90,6 +90,22 @@ type ConfidencePreset = {
 
 const confidencePresets: ConfidencePreset[] = [
   {
+    label: "All studies",
+    description: "Remove filters and browse every study, sorted by the most recent publications.",
+    band: null,
+    values: {
+      search: "",
+      trait: "",
+      minSampleSize: "",
+      maxPValue: "",
+      minLogP: "",
+      excludeLowQuality: false,
+      excludeMissingGenotype: false,
+      sort: "recent",
+      sortDirection: "desc",
+    },
+  },
+  {
     label: "High confidence",
     description: "Large cohorts, strict significance, hide flagged studies",
     band: "high",
@@ -344,9 +360,11 @@ export default function HomePage() {
             and statistically robust findings.
           </p>
         </div>
-        <button className="reset-button" type="button" onClick={resetFilters}>
-          Reset filters
-        </button>
+        <div className="hero-actions">
+          <button className="reset-button" type="button" onClick={resetFilters}>
+            Reset filters
+          </button>
+        </div>
       </header>
 
       <section className="panel">
