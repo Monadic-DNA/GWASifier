@@ -11,7 +11,6 @@ type Filters = {
   trait: string;
   minSampleSize: string;
   maxPValue: string;
-  minLogP: string;
   excludeLowQuality: boolean;
   excludeMissingGenotype: boolean;
   sort: SortOption;
@@ -73,7 +72,6 @@ const defaultFilters: Filters = {
   trait: "",
   minSampleSize: "500",
   maxPValue: "5e-8",
-  minLogP: "6",
   excludeLowQuality: true,
   excludeMissingGenotype: true,
   sort: "relevance",
@@ -99,7 +97,6 @@ const confidencePresets: ConfidencePreset[] = [
       trait: "",
       minSampleSize: "",
       maxPValue: "",
-      minLogP: "",
       excludeLowQuality: false,
       excludeMissingGenotype: false,
       sort: "recent",
@@ -114,7 +111,6 @@ const confidencePresets: ConfidencePreset[] = [
     values: {
       minSampleSize: "5000",
       maxPValue: "5e-9",
-      minLogP: "9",
       excludeLowQuality: true,
       sort: "relevance",
       sortDirection: "desc",
@@ -127,7 +123,6 @@ const confidencePresets: ConfidencePreset[] = [
     values: {
       minSampleSize: "2000",
       maxPValue: "1e-6",
-      minLogP: "7",
       excludeLowQuality: true,
       sort: "power",
       sortDirection: "desc",
@@ -140,7 +135,6 @@ const confidencePresets: ConfidencePreset[] = [
     values: {
       minSampleSize: "200",
       maxPValue: "0.05",
-      minLogP: "3",
       excludeLowQuality: false,
       sort: "recent",
       sortDirection: "desc",
@@ -184,9 +178,6 @@ function buildQuery(filters: Filters): string {
   }
   if (filters.maxPValue.trim()) {
     params.set("maxPValue", filters.maxPValue.trim());
-  }
-  if (filters.minLogP.trim()) {
-    params.set("minLogP", filters.minLogP.trim());
   }
   if (filters.confidenceBand) {
     params.set("confidenceBand", filters.confidenceBand);
@@ -441,34 +432,26 @@ export default function HomePage() {
           </div>
           <div>
             <label htmlFor="maxPValue">
-              Maximum p-value <InfoIcon text="Set an upper bound on association p-values (supports scientific notation)." />
+              Statistical significance <InfoIcon text="Set the minimum level of statistical significance required (lower p-values = more significant)." />
             </label>
-            <input
+            <select
               id="maxPValue"
-              type="text"
-              inputMode="decimal"
-              list="pvalue-presets"
               value={filters.maxPValue}
               onChange={(event) => updateFilter("maxPValue", event.target.value)}
-            />
-            <datalist id="pvalue-presets">
-              <option value="5e-8">Genome-wide (5×10⁻⁸)</option>
-              <option value="1e-6">1×10⁻⁶</option>
-              <option value="1e-4">1×10⁻⁴</option>
-              <option value="0.05">0.05</option>
-            </datalist>
-          </div>
-          <div>
-            <label htmlFor="minLogP">
-              Minimum −log₁₀(p) <InfoIcon text="Highlight more robust signals by requiring a minimum −log10(p) value." />
-            </label>
-            <input
-              id="minLogP"
-              type="number"
-              step="0.5"
-              value={filters.minLogP}
-              onChange={(event) => updateFilter("minLogP", event.target.value)}
-            />
+            >
+              <option value="">Any significance (including non-significant)</option>
+              <option value="1">p ≤ 1.0 (Everything - even random noise)</option>
+              <option value="0.5">p ≤ 0.5 (Coin flip territory)</option>
+              <option value="0.2">p ≤ 0.2 (Weak evidence)</option>
+              <option value="0.1">p ≤ 0.1 (Trend/suggestive)</option>
+              <option value="0.05">p ≤ 0.05 (Traditional threshold)</option>
+              <option value="0.01">p ≤ 0.01 (Strong evidence)</option>
+              <option value="1e-3">p ≤ 0.001 (Very strong)</option>
+              <option value="1e-4">p ≤ 1×10⁻⁴ (Extremely strong)</option>
+              <option value="1e-6">p ≤ 1×10⁻⁶ (Highly significant)</option>
+              <option value="5e-8">p ≤ 5×10⁻⁸ (Genome-wide significant)</option>
+              <option value="5e-9">p ≤ 5×10⁻⁹ (Ultra-stringent)</option>
+            </select>
           </div>
         </div>
         <div className="panel-section inline">
@@ -514,17 +497,7 @@ export default function HomePage() {
               ))}
             </select>
           </div>
-          <div className="toggle">
-            <input
-              id="qualityToggle"
-              type="checkbox"
-              checked={filters.excludeLowQuality}
-              onChange={(event) => updateFilter("excludeLowQuality", event.target.checked)}
-            />
-            <label htmlFor="qualityToggle">
-              Hide low-confidence studies <InfoIcon text="Exclude studies flagged for small cohorts or weak significance." />
-            </label>
-          </div>
+
           <div className="toggle">
             <input
               id="genotypeToggle"
@@ -541,12 +514,7 @@ export default function HomePage() {
 
       <section className="summary" aria-live="polite">
         <p>{summaryText}</p>
-        {qualitySummary.flagged > 0 && filters.excludeLowQuality && (
-          <p>
-            Hidden {qualitySummary.flagged} studies flagged as low confidence. Disable the toggle above to inspect them and review
-            the quality notes.
-          </p>
-        )}
+
       </section>
 
       <section className="table-wrapper" aria-busy={loading}>
