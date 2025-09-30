@@ -74,6 +74,13 @@ button {
   color: rgba(226, 232, 240, 0.85);
 }
 
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
 .reset-button {
   align-self: flex-start;
   background: linear-gradient(135deg, #22d3ee, #3b82f6);
@@ -89,6 +96,16 @@ button {
 .reset-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px -8px rgba(34, 211, 238, 0.45);
+}
+
+@media (max-width: 640px) {
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions button {
+    width: 100%;
+  }
 }
 
 .panel {
