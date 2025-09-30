@@ -44,7 +44,141 @@ type Study = RawStudy & {
   qualityFlags: string[];
   isLowQuality: boolean;
   confidenceBand: ConfidenceBand;
+  publicationDate: number | null;
 };
+
+function normalizeYear(value: string): number | null {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+  if (value.length === 2) {
+    return numeric >= 70 ? 1900 + numeric : 2000 + numeric;
+  }
+  if (value.length === 3) {
+    return numeric >= 100 ? numeric : null;
+  }
+  if (numeric < 0) {
+    return null;
+  }
+  return numeric;
+}
+
+function buildUtcTimestamp(year: number | null, month: number | null, day: number | null): number | null {
+  if (year === null || month === null || day === null) {
+    return null;
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return date.getTime();
+}
+
+function parseNumericDate(parts: [number, number, number], assumeDayFirst: boolean): number | null {
+  const [first, second, year] = parts;
+  const month = assumeDayFirst ? second : first;
+  const day = assumeDayFirst ? first : second;
+  return buildUtcTimestamp(year, month, day);
+}
+
+const monthNames: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function monthFromName(name: string | undefined): number | null {
+  if (!name) {
+    return null;
+  }
+  const key = name.trim().toLowerCase();
+  if (!key) {
+    return null;
+  }
+  return monthNames[key] ?? null;
+}
+
+function parseStudyDate(value: string | null): number | null {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const direct = Date.parse(trimmed);
+  if (!Number.isNaN(direct)) {
+    return direct;
+  }
+
+  const slashMatch = trimmed.match(/^([0-9]{1,2})[\/\-]([0-9]{1,2})[\/\-]([0-9]{2,4})$/);
+  if (slashMatch) {
+    const first = Number(slashMatch[1]);
+    const second = Number(slashMatch[2]);
+    const year = normalizeYear(slashMatch[3]);
+    if (!Number.isFinite(first) || !Number.isFinite(second) || year === null) {
+      return null;
+    }
+    return (
+      parseNumericDate([first, second, year], false) ??
+      parseNumericDate([first, second, year], true)
+    );
+  }
+
+  const textualDayFirst = trimmed.match(/^([0-9]{1,2})\s+([A-Za-z]+)\s+([0-9]{2,4})$/);
+  if (textualDayFirst) {
+    const day = Number(textualDayFirst[1]);
+    const month = monthFromName(textualDayFirst[2]);
+    const year = normalizeYear(textualDayFirst[3]);
+    if (!Number.isFinite(day) || month === null || year === null) {
+      return null;
+    }
+    return buildUtcTimestamp(year, month, day);
+  }
+
+  const textualMonthFirst = trimmed.match(/^([A-Za-z]+)[\s-]+([0-9]{1,2}),?\s*([0-9]{2,4})$/);
+  if (textualMonthFirst) {
+    const month = monthFromName(textualMonthFirst[1]);
+    const day = Number(textualMonthFirst[2]);
+    const year = normalizeYear(textualMonthFirst[3]);
+    if (month === null || !Number.isFinite(day) || year === null) {
+      return null;
+    }
+    return buildUtcTimestamp(year, month, day);
+  }
+
+  return null;
+}
 
 function parseInteger(value: string | null): number | null {
   if (!value) {
@@ -169,6 +303,7 @@ export async function GET(request: NextRequest) {
       const qualityFlags = computeQualityFlags(sampleSize, pValueNumeric, logPValue);
       const isLowQuality = qualityFlags.length > 0;
       const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, isLowQuality);
+      const publicationDate = parseStudyDate(row.date);
       return {
         ...row,
         sampleSize,
@@ -179,6 +314,7 @@ export async function GET(request: NextRequest) {
         qualityFlags,
         isLowQuality,
         confidenceBand,
+        publicationDate,
       } satisfies Study;
     })
     .filter((row) => {
@@ -227,8 +363,17 @@ export async function GET(request: NextRequest) {
       break;
     case "recent":
       sortedStudies.sort((a, b) => {
-        const aDate = a.date ? Date.parse(a.date) : 0;
-        const bDate = b.date ? Date.parse(b.date) : 0;
+        const aDate = a.publicationDate;
+        const bDate = b.publicationDate;
+        if (aDate === null && bDate === null) {
+          return 0;
+        }
+        if (aDate === null) {
+          return 1;
+        }
+        if (bDate === null) {
+          return -1;
+        }
         return directionFactor * (aDate - bDate);
       });
       break;

@@ -49,6 +49,7 @@ type Study = {
   qualityFlags: string[];
   isLowQuality: boolean;
   confidenceBand: ConfidenceBand;
+  publicationDate: number | null;
 };
 
 type StudiesResponse = {
@@ -578,7 +579,9 @@ export default function HomePage() {
             {!loading &&
               studies.map((study) => {
                 const trait = study.mapped_trait ?? study.disease_trait ?? "—";
-                const date = study.date ? new Date(study.date).toLocaleDateString() : "—";
+                const date = study.publicationDate
+                  ? new Date(study.publicationDate).toLocaleDateString()
+                  : study.date ?? "—";
                 const relevance = study.logPValue ? study.logPValue.toFixed(2) : "—";
                 const power = study.sampleSizeLabel ?? "—";
                 const effect = study.or_or_beta ?? "—";
