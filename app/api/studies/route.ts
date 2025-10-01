@@ -345,11 +345,14 @@ export async function GET(request: NextRequest) {
       if (excludeLowQuality && row.isLowQuality) {
         return false;
       }
-      if (
-        excludeMissingGenotype &&
-        (!row.strongest_snp_risk_allele || row.strongest_snp_risk_allele.trim().length === 0)
-      ) {
-        return false;
+      if (excludeMissingGenotype) {
+        if (!row.strongest_snp_risk_allele || 
+            row.strongest_snp_risk_allele.trim().length === 0 ||
+            row.strongest_snp_risk_allele.trim() === '?' ||
+            row.strongest_snp_risk_allele.trim() === 'NR' ||
+            row.strongest_snp_risk_allele.includes('?')) {
+          return false;
+        }
       }
       if (confidenceBandFilter && row.confidenceBand !== confidenceBandFilter) {
         return false;
