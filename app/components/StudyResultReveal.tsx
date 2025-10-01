@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGenotype } from "./UserDataUpload";
+import { useResults } from "./ResultsContext";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
+import DisclaimerModal from "./DisclaimerModal";
+import { SavedResult } from "@/lib/results-manager";
 
 type UserStudyResult = {
   hasMatch: boolean;
@@ -17,18 +20,54 @@ type UserStudyResult = {
 type StudyResultRevealProps = {
   studyId: number;
   snps: string | null;
+  traitName: string;
+  studyTitle: string;
 };
 
-export default function StudyResultReveal({ studyId, snps }: StudyResultRevealProps) {
+export default function StudyResultReveal({ studyId, snps, traitName, studyTitle }: StudyResultRevealProps) {
   const { genotypeData, isUploaded } = useGenotype();
+  const { addResult, hasResult, getResult } = useResults();
   const [result, setResult] = useState<UserStudyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  // Check if we already have a saved result
+  useEffect(() => {
+    if (hasResult(studyId)) {
+      const savedResult = getResult(studyId);
+      if (savedResult) {
+        setResult({
+          hasMatch: true,
+          userGenotype: savedResult.userGenotype,
+          riskAllele: savedResult.riskAllele,
+          effectSize: savedResult.effectSize,
+          riskScore: savedResult.riskScore,
+          riskLevel: savedResult.riskLevel,
+          matchedSnp: savedResult.matchedSnp,
+        });
+        setIsRevealed(true);
+      }
+    }
+  }, [studyId, hasResult, getResult]);
 
   if (!isUploaded || !hasMatchingSNPs(genotypeData, snps)) {
     return null;
   }
+
+  const handleRevealClick = () => {
+    setShowDisclaimer(true);
+  };
+
+  const handleDisclaimerClose = () => {
+    setShowDisclaimer(false);
+  };
+
+  const handleDisclaimerAccept = () => {
+    setShowDisclaimer(false);
+    analyzeStudy();
+  };
 
   const analyzeStudy = async () => {
     if (!genotypeData) return;
@@ -59,6 +98,23 @@ export default function StudyResultReveal({ studyId, snps }: StudyResultRevealPr
 
       setResult(data.result);
       setIsRevealed(true);
+
+      // Save the result if it has a match
+      if (data.result.hasMatch) {
+        const savedResult: SavedResult = {
+          studyId,
+          traitName,
+          studyTitle,
+          userGenotype: data.result.userGenotype!,
+          riskAllele: data.result.riskAllele!,
+          effectSize: data.result.effectSize!,
+          riskScore: data.result.riskScore!,
+          riskLevel: data.result.riskLevel!,
+          matchedSnp: data.result.matchedSnp!,
+          analysisDate: new Date().toISOString(),
+        };
+        addResult(savedResult);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
     } finally {
@@ -138,12 +194,20 @@ export default function StudyResultReveal({ studyId, snps }: StudyResultRevealPr
   }
 
   return (
-    <button 
-      className="reveal-button" 
-      onClick={analyzeStudy}
-      disabled={isLoading}
-    >
-      {isLoading ? '...' : 'Your result'}
-    </button>
+    <>
+      <DisclaimerModal 
+        isOpen={showDisclaimer}
+        onClose={handleDisclaimerClose}
+        type="result"
+        onAccept={handleDisclaimerAccept}
+      />
+      <button 
+        className="reveal-button" 
+        onClick={handleRevealClick}
+        disabled={isLoading}
+      >
+        {isLoading ? '...' : 'Your result'}
+      </button>
+    </>
   );
 }

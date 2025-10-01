@@ -102,6 +102,50 @@ body {
   font-weight: 500;
 }
 
+.results-controls,
+.file-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-button {
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.control-button:hover:not(:disabled) {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.control-button.save:hover:not(:disabled) {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.control-button.clear:hover:not(:disabled) {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
 .monadic-link {
   color: var(--accent-blue);
   text-decoration: none;
@@ -160,6 +204,190 @@ body {
 .footer-link:hover {
   color: #2563EB;
   text-decoration: underline;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.15);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-dialog {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+  max-width: min(600px, 90vw);
+  width: 100%;
+  height: min(85vh, 700px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.modal-content h2 {
+  margin: 0 0 1rem;
+  padding: 1.5rem 1.5rem 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+
+.disclaimer-text {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1rem;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+.disclaimer-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.disclaimer-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.disclaimer-text::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 3px;
+}
+
+.disclaimer-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  .modal-dialog {
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+  }
+
+  .modal-content h2 {
+    color: #f3f4f6;
+  }
+
+  .disclaimer-text {
+    color: #d1d5db;
+  }
+
+  .modal-actions {
+    background: rgba(17, 24, 39, 0.8);
+    border-top: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .disclaimer-text::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.4);
+  }
+
+  .disclaimer-text::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.6);
+  }
+}
+
+.disclaimer-text h3 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.disclaimer-text ul {
+  margin: 0.5rem 0 1rem 1rem;
+}
+
+.disclaimer-text li {
+  margin: 0.5rem 0;
+}
+
+.disclaimer-text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.entertainment-reminder {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.disclaimer-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.disclaimer-button.primary {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.disclaimer-button.primary:hover:not(:disabled) {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px -2px rgba(59, 130, 246, 0.4);
+}
+
+.disclaimer-button.primary:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.disclaimer-button.secondary {
+  background: var(--surface-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.disclaimer-button.secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
 }
 
 a {
@@ -1142,6 +1370,41 @@ tbody tr:hover {
   .status-section {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .results-controls,
+  .file-controls {
+    justify-content: center;
+  }
+
+  .control-button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-dialog {
+    max-width: 95vw;
+    width: 95vw;
+    height: 90vh;
+  }
+
+  .modal-content h2 {
+    font-size: 1.1rem;
+    padding: 1rem 1rem 0;
+  }
+
+  .disclaimer-text {
+    padding: 0 1rem;
+    font-size: 0.85rem;
+  }
+
+  .modal-actions {
+    padding: 1rem;
+    flex-shrink: 0;
   }
 
   .app-title {

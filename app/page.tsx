@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { GenotypeProvider, useGenotype } from "./components/UserDataUpload";
+import { ResultsProvider, useResults } from "./components/ResultsContext";
 import StudyResultReveal from "./components/StudyResultReveal";
 import MenuBar from "./components/MenuBar";
 import VariantChips from "./components/VariantChips";
 import Footer from "./components/Footer";
+import DisclaimerModal from "./components/DisclaimerModal";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
@@ -133,7 +135,8 @@ function buildQuery(filters: Filters): string {
 }
 
 function MainContent() {
-  const { genotypeData, isUploaded } = useGenotype();
+  const { genotypeData, isUploaded, setOnDataLoadedCallback } = useGenotype();
+  const { setOnResultsLoadedCallback } = useResults();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [traits, setTraits] = useState<string[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
@@ -146,6 +149,14 @@ function MainContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
+  const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(true);
+
+  // Set up callback to auto-check "Only my variants" when genotype data is loaded
+  useEffect(() => {
+    setOnDataLoadedCallback(() => {
+      updateFilter("requireUserSNPs", true);
+    });
+  }, [setOnDataLoadedCallback]);
 
   useEffect(() => {
     let active = true;
@@ -335,6 +346,11 @@ function MainContent() {
 
   return (
     <div className="app-container">
+      <DisclaimerModal 
+        isOpen={showInitialDisclaimer}
+        onClose={() => setShowInitialDisclaimer(false)}
+        type="initial"
+      />
       <MenuBar />
       <main className="page">
         <section className={`panel ${sectionCollapsed ? "collapsed" : ""}`}>
@@ -639,7 +655,12 @@ function MainContent() {
                       </div>
                     </td>
                     <td>
-                      <StudyResultReveal studyId={study.id} snps={study.snps} />
+                      <StudyResultReveal 
+                        studyId={study.id} 
+                        snps={study.snps}
+                        traitName={trait}
+                        studyTitle={study.study || "Untitled study"}
+                      />
                     </td>
                   </tr>
                 );
@@ -656,7 +677,9 @@ function MainContent() {
 export default function HomePage() {
   return (
     <GenotypeProvider>
-      <MainContent />
+      <ResultsProvider>
+        <MainContent />
+      </ResultsProvider>
     </GenotypeProvider>
   );
 }

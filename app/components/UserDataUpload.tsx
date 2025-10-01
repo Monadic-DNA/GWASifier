@@ -10,6 +10,7 @@ type GenotypeContextType = {
   isUploaded: boolean;
   isLoading: boolean;
   error: string | null;
+  setOnDataLoadedCallback: (callback: (() => void) | null) => void;
 };
 
 const GenotypeContext = createContext<GenotypeContextType | null>(null);
@@ -18,6 +19,7 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
   const [genotypeData, setGenotypeData] = useState<Map<string, string> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [onDataLoaded, setOnDataLoaded] = useState<(() => void) | null>(null);
 
   const uploadGenotype = async (file: File) => {
     setIsLoading(true);
@@ -45,6 +47,11 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
       });
 
       setGenotypeData(genotypeMap);
+      
+      // Call the callback if it exists
+      if (onDataLoaded) {
+        onDataLoaded();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -65,6 +72,7 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
       isUploaded: !!genotypeData,
       isLoading,
       error,
+      setOnDataLoadedCallback: setOnDataLoaded,
     }}>
       {children}
     </GenotypeContext.Provider>
