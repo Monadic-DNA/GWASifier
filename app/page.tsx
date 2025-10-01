@@ -5,6 +5,7 @@ import { GenotypeProvider, useGenotype } from "./components/UserDataUpload";
 import StudyResultReveal from "./components/StudyResultReveal";
 import MenuBar from "./components/MenuBar";
 import VariantChips from "./components/VariantChips";
+import Footer from "./components/Footer";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
@@ -190,7 +191,23 @@ function MainContent() {
         
         // Client-side filtering for user SNPs
         if (filters.requireUserSNPs && genotypeData) {
-          filteredData = filteredData.filter(study => hasMatchingSNPs(genotypeData, study.snps));
+          filteredData = filteredData.filter(study => {
+            // First check if study has matching SNPs with user data
+            const hasUserSNPs = hasMatchingSNPs(genotypeData, study.snps);
+            if (!hasUserSNPs) return false;
+            
+            // If "Require genotype" is also enabled, ensure the study has genotype data
+            if (filters.excludeMissingGenotype) {
+              const hasGenotype = study.strongest_snp_risk_allele && 
+                study.strongest_snp_risk_allele.trim().length > 0 &&
+                study.strongest_snp_risk_allele.trim() !== '?' &&
+                study.strongest_snp_risk_allele.trim() !== 'NR' &&
+                !study.strongest_snp_risk_allele.includes('?');
+              return hasGenotype;
+            }
+            
+            return true;
+          });
         }
         
         setStudies(filteredData);
@@ -631,6 +648,7 @@ function MainContent() {
         </table>
       </section>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -71,6 +71,45 @@ export default function StudyResultReveal({ studyId, snps }: StudyResultRevealPr
     return `${score.toFixed(2)}x`;
   };
 
+  const generateTooltip = (result: UserStudyResult) => {
+    if (!result.hasMatch) return "No genetic data available for this study's variants.";
+    
+    const riskMultiplier = result.riskScore!;
+    const riskDirection = result.riskLevel!;
+    const userGenotype = result.userGenotype!;
+    const riskAllele = result.riskAllele!.split('-').pop() || '';
+    const userAlleles = userGenotype.split('');
+    const riskAlleleCount = userAlleles.filter(allele => allele === riskAllele).length;
+    
+    let baseExplanation = `Your genotype is ${userGenotype}. `;
+    
+    if (riskAlleleCount === 0) {
+      baseExplanation += `You don't carry the risk variant (${riskAllele}), which means this genetic factor doesn't increase your risk for this trait. `;
+    } else if (riskAlleleCount === 1) {
+      baseExplanation += `You carry one copy of the risk variant (${riskAllele}), meaning you inherited it from one parent. `;
+    } else {
+      baseExplanation += `You carry two copies of the risk variant (${riskAllele}), meaning you inherited it from both parents. `;
+    }
+
+    if (riskDirection === 'neutral') {
+      baseExplanation += "This genetic variant appears to have no significant effect on your risk.";
+    } else if (riskDirection === 'increased') {
+      if (riskMultiplier < 1.5) {
+        baseExplanation += `This slightly increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. This is a small effect that may be offset by lifestyle and other genetic factors.`;
+      } else if (riskMultiplier < 2.0) {
+        baseExplanation += `This moderately increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Combined with other factors, this could be meaningful for prevention strategies.`;
+      } else {
+        baseExplanation += `This substantially increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Consider discussing this with a healthcare provider, especially if you have other risk factors.`;
+      }
+    } else if (riskDirection === 'decreased') {
+      baseExplanation += `This genetic variant appears to be protective, potentially reducing your risk by ${((1 - riskMultiplier) * 100).toFixed(0)}%. This is a favorable genetic factor for this trait.`;
+    }
+
+    baseExplanation += ` Remember that genetics is just one piece of the puzzle - lifestyle, environment, and other genetic variants all play important roles.`;
+    
+    return baseExplanation;
+  };
+
   if (isRevealed && result) {
     if (!result.hasMatch) {
       return (
@@ -81,7 +120,10 @@ export default function StudyResultReveal({ studyId, snps }: StudyResultRevealPr
     }
 
     return (
-      <div className={`user-result has-match risk-${result.riskLevel}`}>
+      <div 
+        className={`user-result has-match risk-${result.riskLevel}`}
+        title={generateTooltip(result)}
+      >
         <div className="user-genotype">
           Your genotype: <span className="genotype-value">{result.userGenotype}</span>
         </div>
