@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { GenotypeProvider, useGenotype } from "./components/UserDataUpload";
+import StudyResultReveal from "./components/StudyResultReveal";
+import MenuBar from "./components/MenuBar";
+import VariantChips from "./components/VariantChips";
+import { hasMatchingSNPs } from "@/lib/snp-utils";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
 type SortDirection = "asc" | "desc";
@@ -13,6 +18,7 @@ type Filters = {
   maxPValue: string;
   excludeLowQuality: boolean;
   excludeMissingGenotype: boolean;
+  requireUserSNPs: boolean;
   sort: SortOption;
   sortDirection: SortDirection;
   limit: number;
@@ -74,6 +80,7 @@ const defaultFilters: Filters = {
   maxPValue: "5e-8",
   excludeLowQuality: true,
   excludeMissingGenotype: true,
+  requireUserSNPs: false,
   sort: "relevance",
   sortDirection: "desc",
   limit: 75,
@@ -124,7 +131,8 @@ function buildQuery(filters: Filters): string {
   return params.toString();
 }
 
-export default function HomePage() {
+function MainContent() {
+  const { genotypeData, isUploaded } = useGenotype();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [traits, setTraits] = useState<string[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
@@ -177,9 +185,17 @@ export default function HomePage() {
         if (payload.error) {
           throw new Error(payload.error);
         }
-        setStudies(payload.data ?? []);
+        
+        let filteredData = payload.data ?? [];
+        
+        // Client-side filtering for user SNPs
+        if (filters.requireUserSNPs && genotypeData) {
+          filteredData = filteredData.filter(study => hasMatchingSNPs(genotypeData, study.snps));
+        }
+        
+        setStudies(filteredData);
         setMeta({
-          total: payload.total ?? 0,
+          total: filteredData.length,
           limit: payload.limit ?? filters.limit,
           truncated: payload.truncated ?? false,
           sourceCount: payload.sourceCount ?? 0,
@@ -199,7 +215,7 @@ export default function HomePage() {
       });
 
     return () => controller.abort();
-  }, [filters]);
+  }, [filters, genotypeData]);
 
   const qualitySummary = useMemo<QualitySummary>(() => {
     return studies.reduce<QualitySummary>(
@@ -301,17 +317,19 @@ export default function HomePage() {
   ]);
 
   return (
-    <main className="page">
-      <section className={`panel ${sectionCollapsed ? "collapsed" : ""}`}>
+    <div className="app-container">
+      <MenuBar />
+      <main className="page">
+        <section className={`panel ${sectionCollapsed ? "collapsed" : ""}`}>
         <div className="panel-header">
           <div className="hero-title-section">
             {!sectionCollapsed && (
               <>
-                <h1>GWAS Catalog Explorer</h1>
-                <p>Explore genetic associations from genome-wide association studies.</p>
+                <h2>Study Filters</h2>
+                <p>Filter genetic association studies by various criteria.</p>
               </>
             )}
-            {sectionCollapsed && <h2>GWAS Catalog Explorer</h2>}
+            {sectionCollapsed && <h3>Study Filters</h3>}
           </div>
           <div className="hero-controls">
             {!sectionCollapsed && (
@@ -425,6 +443,19 @@ export default function HomePage() {
                   Require genotype <InfoIcon text="Hide associations without SNP risk allele." />
                 </label>
               </div>
+              {isUploaded && (
+                <div className="panel-field checkbox-field">
+                  <input
+                    id="userSNPToggle"
+                    type="checkbox"
+                    checked={filters.requireUserSNPs}
+                    onChange={(event) => updateFilter("requireUserSNPs", event.target.checked)}
+                  />
+                  <label htmlFor="userSNPToggle">
+                    Only my variants <InfoIcon text="Show only studies with SNPs in your personal data." />
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -487,19 +518,22 @@ export default function HomePage() {
               <th scope="col" title="Our assessment of study reliability based on sample size, statistical significance, and data quality. High confidence studies are most trustworthy.">
                 Quality <span className="info-icon">ⓘ</span>
               </th>
+              <th scope="col" title="Your personal genetic result for this study. Upload your 23andMe data to see your results.">
+                Your Result <span className="info-icon">ⓘ</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="loading-row">
+                <td colSpan={8} className="loading-row">
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && studies.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-row">
+                <td colSpan={8} className="empty-row">
                   No studies found. Try widening your filters.
                 </td>
               </tr>
@@ -550,31 +584,7 @@ export default function HomePage() {
                     </td>
                     <td>{trait}</td>
                     <td>
-                      <div className="variant-cell">
-                        <div className="variant-chip-group" aria-label="SNP identifier">
-                          {variantIds.length > 0 ? (
-                            variantIds.map((variantId) => (
-                              <a
-                                key={variantId}
-                                className="variant-chip variant-link"
-                                href={`https://www.ncbi.nlm.nih.gov/snp/${encodeURIComponent(variantId)}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {variantId}
-                              </a>
-                            ))
-                          ) : (
-                            <span className="variant-chip variant-chip--placeholder">Not reported</span>
-                          )}
-                        </div>
-                        <span
-                          className={hasGenotype ? "variant-chip secondary" : "variant-chip variant-chip--placeholder"}
-                          aria-label="Risk allele or genotype"
-                        >
-                          {hasGenotype ? variantGenotype : "Not reported"}
-                        </span>
-                      </div>
+                      <VariantChips snps={study.snps} riskAllele={study.strongest_snp_risk_allele} />
                     </td>
                     <td>
                       <span className="metric">{relevance}</span>
@@ -611,12 +621,24 @@ export default function HomePage() {
                         )}
                       </div>
                     </td>
+                    <td>
+                      <StudyResultReveal studyId={study.id} snps={study.snps} />
+                    </td>
                   </tr>
                 );
               })}
           </tbody>
         </table>
       </section>
-    </main>
+      </main>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <GenotypeProvider>
+      <MainContent />
+    </GenotypeProvider>
   );
 }

@@ -33,6 +33,75 @@ body {
   background-attachment: fixed;
 }
 
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Menu Bar Styles */
+.menu-bar {
+  background: var(--surface-bg);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(20px);
+  padding: 1rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
+}
+
+.app-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.genotype-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -79,6 +148,7 @@ button {
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
+  flex: 1;
 }
 
 .hero {
@@ -453,7 +523,7 @@ button {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 960px;
 }
 
 thead {
@@ -589,6 +659,25 @@ tbody tr:hover {
   box-shadow: 0 2px 4px -1px rgba(59, 130, 246, 0.3);
 }
 
+.variant-chip.has-user-data {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-green);
+  border-color: rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+}
+
+.variant-chip.has-user-data:hover {
+  background: var(--accent-green);
+  color: white;
+  border-color: var(--accent-green);
+}
+
+.user-data-indicator {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--accent-green);
+}
+
 .variant-link {
   text-decoration: none;
   cursor: pointer;
@@ -685,6 +774,199 @@ tbody tr:hover {
   background-color: rgba(239, 68, 68, 0.05);
 }
 
+/* Unobtrusive Genotype Upload Styles */
+.genotype-upload {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.genotype-file-input {
+  display: none;
+}
+
+.genotype-upload-label {
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.genotype-upload-label:hover {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.genotype-file-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  border-radius: 6px;
+}
+
+.genotype-file-selected span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.genotype-upload-button {
+  background: var(--accent-green);
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.genotype-upload-button:hover {
+  background: #059669;
+}
+
+.genotype-upload-button:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.genotype-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  border-radius: 6px;
+}
+
+.genotype-indicator {
+  font-size: 0.85rem;
+  color: var(--accent-green);
+  font-weight: 500;
+}
+
+.genotype-clear {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.genotype-clear:hover {
+  background: var(--accent-red);
+  color: white;
+  border-color: var(--accent-red);
+}
+
+.genotype-error {
+  font-size: 0.8rem;
+  color: var(--accent-red);
+  padding: 0.25rem 0.5rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
+}
+
+/* Study Result Reveal Styles */
+.reveal-button {
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  color: var(--accent-blue);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.reveal-button:hover {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.reveal-button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.user-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.user-result.no-match {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.user-result.has-match .user-genotype {
+  color: var(--text-primary);
+}
+
+.user-result .genotype-value {
+  font-family: monospace;
+  font-weight: 600;
+  background: var(--surface-bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.user-result .risk-score {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  width: fit-content;
+  font-size: 0.85rem;
+}
+
+.user-result .risk-score.risk-increased {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--accent-red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.user-result .risk-score.risk-decreased {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.user-result .risk-score.risk-neutral {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.risk-label {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
 @media (max-width: 768px) {
   .page {
     padding: 1rem 1rem 2rem;
@@ -734,11 +1016,47 @@ tbody tr:hover {
   }
 
   table {
-    min-width: 680px;
+    min-width: 780px;
   }
 
   th,
   td {
     padding: 0.75rem;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .results-table {
+    min-width: 600px;
+  }
+
+  .menu-bar {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .menu-left {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .menu-right {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-section {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .app-title {
+    font-size: 1.25rem;
   }
 }
