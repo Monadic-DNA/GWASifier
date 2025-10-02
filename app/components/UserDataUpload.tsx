@@ -112,7 +112,8 @@ export default function UserDataUpload() {
     if (!file) return;
 
     // Validate file type
-    if (!file.name.toLowerCase().endsWith('.txt') && !file.name.toLowerCase().endsWith('.tsv')) {
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.txt') && !fileName.endsWith('.tsv') && !fileName.endsWith('.csv')) {
       return;
     }
 
@@ -157,13 +158,13 @@ export default function UserDataUpload() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".txt,.tsv"
+            accept=".txt,.tsv,.csv"
             onChange={handleFileSelect}
             className="genotype-file-input"
             id="genotype-upload"
           />
           <label htmlFor="genotype-upload" className="genotype-upload-label">
-            Load 23andMe data
+            Load genetic data
           </label>
         </>
       ) : (

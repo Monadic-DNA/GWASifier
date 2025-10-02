@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parse23andMeFile } from "@/lib/genotype-parser";
+import { detectAndParseGenotypeFile } from "@/lib/genotype-parser";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,16 +23,16 @@ export async function POST(request: NextRequest) {
 
     // Validate file format
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.txt') && !fileName.endsWith('.tsv')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid file format. Please upload a .txt or .tsv file from 23andMe.' 
+    if (!fileName.endsWith('.txt') && !fileName.endsWith('.tsv') && !fileName.endsWith('.csv')) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe or Monadic DNA.'
       }, { status: 400 });
     }
 
-    // Parse the genotype file
+    // Parse the genotype file with auto-detection
     const fileContent = await file.text();
-    const parseResult = parse23andMeFile(fileContent);
+    const parseResult = detectAndParseGenotypeFile(fileContent);
 
     if (!parseResult.success) {
       return NextResponse.json({ 
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
       data: parseResult.data,
       totalVariants: parseResult.totalVariants,
       validVariants: parseResult.validVariants,
+      detectedFormat: parseResult.detectedFormat,
     });
 
   } catch (error) {
