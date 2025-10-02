@@ -5,7 +5,7 @@ import UserDataUpload, { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 
 export default function MenuBar() {
-  const { isUploaded, genotypeData } = useGenotype();
+  const { isUploaded, genotypeData, fileHash } = useGenotype();
   const { savedResults, saveToFile, loadFromFile, clearResults } = useResults();
   const [isLoadingFile, setIsLoadingFile] = useState(false);
 
@@ -53,12 +53,14 @@ export default function MenuBar() {
           )}
           <UserDataUpload />
         </div>
-        
+
         {savedResults.length > 0 && (
-          <div className="results-controls">
-            <button 
-              className="control-button save" 
-              onClick={saveToFile}
+          <>
+            <div className="menu-separator" />
+            <div className="results-controls">
+            <button
+              className="control-button save"
+              onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
               title="Save your results to a file"
             >
               💾 Save
@@ -71,8 +73,9 @@ export default function MenuBar() {
               🗑️ Clear
             </button>
           </div>
+          </>
         )}
-        
+
         <div className="file-controls">
           <button 
             className="control-button load" 

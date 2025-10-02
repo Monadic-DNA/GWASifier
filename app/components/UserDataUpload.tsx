@@ -2,6 +2,7 @@
 
 import { useState, useRef, createContext, useContext } from "react";
 import { GenotypeData } from "@/lib/genotype-parser";
+import { calculateFileHash } from "@/lib/file-hash";
 
 type GenotypeContextType = {
   genotypeData: Map<string, string> | null;
@@ -11,6 +12,8 @@ type GenotypeContextType = {
   isLoading: boolean;
   error: string | null;
   setOnDataLoadedCallback: (callback: (() => void) | null) => void;
+  fileHash: string | null;
+  originalFileName: string | null;
 };
 
 const GenotypeContext = createContext<GenotypeContextType | null>(null);
@@ -20,12 +23,18 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [onDataLoaded, setOnDataLoaded] = useState<(() => void) | null>(null);
+  const [fileHash, setFileHash] = useState<string | null>(null);
+  const [originalFileName, setOriginalFileName] = useState<string | null>(null);
 
   const uploadGenotype = async (file: File) => {
     setIsLoading(true);
     setError(null);
 
     try {
+      // Read file content to calculate hash
+      const fileContent = await file.text();
+      const hash = calculateFileHash(fileContent);
+
       const formData = new FormData();
       formData.append('genotype', file);
 
@@ -47,7 +56,9 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
       });
 
       setGenotypeData(genotypeMap);
-      
+      setFileHash(hash);
+      setOriginalFileName(file.name);
+
       // Call the callback if it exists
       if (onDataLoaded) {
         onDataLoaded();
@@ -62,6 +73,8 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
   const clearGenotype = () => {
     setGenotypeData(null);
     setError(null);
+    setFileHash(null);
+    setOriginalFileName(null);
   };
 
   return (
@@ -73,6 +86,8 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       error,
       setOnDataLoadedCallback: setOnDataLoaded,
+      fileHash,
+      originalFileName,
     }}>
       {children}
     </GenotypeContext.Provider>

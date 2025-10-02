@@ -1,5 +1,6 @@
 export type SavedResult = {
   studyId: number;
+  gwasId?: string; // GWAS study accession ID
   traitName: string;
   studyTitle: string;
   userGenotype: string;
@@ -15,6 +16,7 @@ export type SavedSession = {
   fileName: string;
   createdDate: string;
   totalVariants: number;
+  genotypeFileHash?: string; // Hash of the original genotype file
   results: SavedResult[];
 };
 

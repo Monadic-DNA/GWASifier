@@ -8,7 +8,7 @@ type ResultsContextType = {
   addResult: (result: SavedResult) => void;
   removeResult: (studyId: number) => void;
   clearResults: () => void;
-  saveToFile: () => void;
+  saveToFile: (genotypeSize?: number, genotypeHash?: string) => void;
   loadFromFile: () => Promise<void>;
   hasResult: (studyId: number) => boolean;
   getResult: (studyId: number) => SavedResult | undefined;
@@ -43,11 +43,12 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     ResultsManager.clearLocalStorage();
   };
 
-  const saveToFile = () => {
+  const saveToFile = (genotypeSize?: number, genotypeHash?: string) => {
     const session: SavedSession = {
       fileName: `gwasifier_results_${new Date().toISOString().split('T')[0]}`,
       createdDate: new Date().toISOString(),
-      totalVariants: 0, // This would come from genotype context
+      totalVariants: genotypeSize || 0,
+      genotypeFileHash: genotypeHash,
       results: savedResults
     };
 

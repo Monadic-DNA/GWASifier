@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { getDb } from "@/lib/db";
+import { executeQuery } from "@/lib/db";
 
 export async function GET() {
   try {
-    const db = getDb();
-    const rows = db
-      .prepare(
-        `SELECT DISTINCT COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) AS trait
-         FROM gwas_catalog
-         WHERE COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) IS NOT NULL
-         ORDER BY trait COLLATE NOCASE`,
-      )
-      .all() as { trait: string | null }[];
+    const rows = await executeQuery<{ trait: string | null }>(
+      `SELECT DISTINCT COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) AS trait
+       FROM gwas_catalog
+       WHERE COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) IS NOT NULL
+       ORDER BY COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) COLLATE NOCASE`
+    );
 
     const traits = rows
       .map((row) => row.trait)

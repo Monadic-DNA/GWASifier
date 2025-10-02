@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { executeQuerySingle, getDbType } from "@/lib/db";
 
 type UserStudyResult = {
   hasMatch: boolean;
@@ -9,6 +9,7 @@ type UserStudyResult = {
   riskScore?: number;
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
+  gwasId?: string;
 };
 
 function calculateRiskScore(userGenotype: string, riskAllele: string, effectSize: string): {
@@ -65,34 +66,32 @@ export async function POST(request: NextRequest) {
     const genotypeMap = new Map<string, string>(Object.entries(genotypeData));
 
     // Get study from database
-    let db;
-    try {
-      db = getDb();
-    } catch (error) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Database connection failed' 
-      }, { status: 500 });
-    }
+    // Use appropriate ID lookup based on database type
+    const dbType = getDbType();
+
+    const idCondition = dbType === 'postgres'
+      ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\') || COALESCE(p_value, \'\') || COALESCE(or_or_beta::text, \'\')) = ?'
+      : 'rowid = ?';
 
     const query = `
-      SELECT 
+      SELECT
         snps,
         strongest_snp_risk_allele,
-        or_or_beta
-      FROM gwas_catalog 
-      WHERE rowid = ?
-      AND snps IS NOT NULL
-      AND strongest_snp_risk_allele IS NOT NULL
-      AND or_or_beta IS NOT NULL
+        or_or_beta,
+        study_accession
+      FROM gwas_catalog
+      WHERE ${idCondition}
+      AND snps IS NOT NULL AND snps != ''
+      AND strongest_snp_risk_allele IS NOT NULL AND strongest_snp_risk_allele != ''
+      AND or_or_beta IS NOT NULL AND or_or_beta != ''
     `;
 
-    const statement = db.prepare(query);
-    const study = statement.get(studyId) as {
+    const study = await executeQuerySingle<{
       snps: string | null;
       strongest_snp_risk_allele: string | null;
       or_or_beta: string | null;
-    } | undefined;
+      study_accession: string | null;
+    }>(query, [studyId]);
 
     if (!study) {
       return NextResponse.json({ 
@@ -103,16 +102,16 @@ export async function POST(request: NextRequest) {
 
     // Extract SNP IDs from the study
     const studySnps = (study.snps || '').split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
-    
+
     // Find matching SNPs
     for (const snp of studySnps) {
       if (genotypeMap.has(snp)) {
         const userGenotype = genotypeMap.get(snp)!;
         const riskAllele = study.strongest_snp_risk_allele || '';
         const effectSize = study.or_or_beta || '';
-        
+
         const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize);
-        
+
         return NextResponse.json({
           success: true,
           result: {
@@ -123,12 +122,15 @@ export async function POST(request: NextRequest) {
             riskScore: score,
             riskLevel: level,
             matchedSnp: snp,
+            gwasId: study.study_accession || undefined,
           } as UserStudyResult
         });
       }
     }
 
     // No matches found
+    console.log('No SNP matches found. Study SNPs:', studySnps, 'User has:', genotypeMap.size, 'variants');
+
     return NextResponse.json({
       success: true,
       result: {

@@ -15,6 +15,7 @@ type UserStudyResult = {
   riskScore?: number;
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
+  gwasId?: string;
 };
 
 type StudyResultRevealProps = {
@@ -51,10 +52,6 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
       }
     }
   }, [studyId, hasResult, getResult]);
-
-  if (!isUploaded || !hasMatchingSNPs(genotypeData, snps)) {
-    return null;
-  }
 
   const handleRevealClick = () => {
     setShowDisclaimer(true);
@@ -103,6 +100,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
       if (data.result.hasMatch) {
         const savedResult: SavedResult = {
           studyId,
+          gwasId: data.result.gwasId,
           traitName,
           studyTitle,
           userGenotype: data.result.userGenotype!,
@@ -193,16 +191,21 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     );
   }
 
+  // Only show the reveal button if we have user data and matching SNPs
+  if (!isUploaded || !hasMatchingSNPs(genotypeData, snps)) {
+    return null;
+  }
+
   return (
     <>
-      <DisclaimerModal 
+      <DisclaimerModal
         isOpen={showDisclaimer}
         onClose={handleDisclaimerClose}
         type="result"
         onAccept={handleDisclaimerAccept}
       />
-      <button 
-        className="reveal-button" 
+      <button
+        className="reveal-button"
         onClick={handleRevealClick}
         disabled={isLoading}
       >
