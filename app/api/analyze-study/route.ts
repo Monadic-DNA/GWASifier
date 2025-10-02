@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const dbType = getDbType();
 
     const idCondition = dbType === 'postgres'
-      ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\')) = ?'
+      ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\') || COALESCE(p_value, \'\') || COALESCE(or_or_beta::text, \'\')) = ?'
       : 'rowid = ?';
 
     const query = `

@@ -264,7 +264,7 @@ export async function GET(request: NextRequest) {
   // Use appropriate ID selection based on database type
   const dbType = getDbType();
   const idSelection = dbType === 'postgres'
-    ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\')) AS id'
+    ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\') || COALESCE(p_value, \'\') || COALESCE(or_or_beta::text, \'\')) AS id'
     : 'rowid AS id';
 
   const baseQuery = `SELECT ${idSelection},
