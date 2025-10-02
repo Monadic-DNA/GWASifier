@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getDb } from "@/lib/db";
+import { executeQuery, executeQuerySingle } from "@/lib/db";
 import {
   computeQualityFlags,
   formatNumber,
@@ -221,13 +221,6 @@ function determineConfidenceBand(
 }
 
 export async function GET(request: NextRequest) {
-  let db;
-  try {
-    db = getDb();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to open database";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
 
   const searchParams = request.nextUrl.searchParams;
   const search = searchParams.get("search")?.trim();
@@ -295,8 +288,8 @@ export async function GET(request: NextRequest) {
     ? Math.min(limit * 8, 2000)
     : Math.min(limit * 4, 800);
 
-  const statement = db.prepare(baseQuery);
-  const rawRows = statement.all(...params, rawLimit) as RawStudy[];
+  try {
+    const rawRows = await executeQuery<RawStudy>(baseQuery, [...params, rawLimit]);
 
   const maxPValue = maxPValueRaw ? parsePValue(maxPValueRaw) : null;
   const minLogP = minLogPRaw ? Number(minLogPRaw) : null;
@@ -360,8 +353,8 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
-  const countStatement = db.prepare(`SELECT COUNT(*) as count FROM gwas_catalog ${whereClause}`);
-  const { count: sourceCount } = countStatement.get(...params) as { count: number };
+    const countResult = await executeQuerySingle<{ count: number }>(`SELECT COUNT(*) as count FROM gwas_catalog ${whereClause}`, params);
+    const sourceCount = countResult?.count ?? 0;
 
   const sortedStudies = [...studies];
   const directionFactor = direction === "asc" ? 1 : -1;
@@ -398,11 +391,15 @@ export async function GET(request: NextRequest) {
 
   const finalResults = sortedStudies.slice(0, limit);
 
-  return NextResponse.json({
-    data: finalResults,
-    total: studies.length,
-    limit,
-    truncated: studies.length > finalResults.length,
-    sourceCount,
-  });
+    return NextResponse.json({
+      data: finalResults,
+      total: studies.length,
+      limit,
+      truncated: studies.length > finalResults.length,
+      sourceCount,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to query database";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

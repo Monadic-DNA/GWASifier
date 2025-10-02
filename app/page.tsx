@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { GenotypeProvider, useGenotype } from "./components/UserDataUpload";
 import { ResultsProvider, useResults } from "./components/ResultsContext";
 import StudyResultReveal from "./components/StudyResultReveal";
@@ -149,14 +149,24 @@ function MainContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
-  const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(true);
+  const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(false);
+
+  const updateFilter = useCallback(<Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key !== "confidenceBand") {
+        next.confidenceBand = null;
+      }
+      return next;
+    });
+  }, []);
 
   // Set up callback to auto-check "Only my variants" when genotype data is loaded
   useEffect(() => {
     setOnDataLoadedCallback(() => {
       updateFilter("requireUserSNPs", true);
     });
-  }, [setOnDataLoadedCallback]);
+  }, [setOnDataLoadedCallback, updateFilter]);
 
   useEffect(() => {
     let active = true;
@@ -257,16 +267,6 @@ function MainContent() {
       { high: 0, medium: 0, low: 0, flagged: 0 },
     );
   }, [studies]);
-
-  const updateFilter = <Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
-    setFilters((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key !== "confidenceBand") {
-        next.confidenceBand = null;
-      }
-      return next;
-    });
-  };
 
   const resetFilters = () => {
     setFilters(defaultFilters);

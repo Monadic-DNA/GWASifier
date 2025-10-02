@@ -15,6 +15,7 @@ type UserStudyResult = {
   riskScore?: number;
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
+  gwasId?: string;
 };
 
 type StudyResultRevealProps = {
@@ -103,6 +104,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
       if (data.result.hasMatch) {
         const savedResult: SavedResult = {
           studyId,
+          gwasId: data.result.gwasId,
           traitName,
           studyTitle,
           userGenotype: data.result.userGenotype!,

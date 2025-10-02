@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { executeQuerySingle } from "@/lib/db";
 
 type UserStudyResult = {
   hasMatch: boolean;
@@ -9,6 +9,7 @@ type UserStudyResult = {
   riskScore?: number;
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
+  gwasId?: string;
 };
 
 function calculateRiskScore(userGenotype: string, riskAllele: string, effectSize: string): {
@@ -65,34 +66,25 @@ export async function POST(request: NextRequest) {
     const genotypeMap = new Map<string, string>(Object.entries(genotypeData));
 
     // Get study from database
-    let db;
-    try {
-      db = getDb();
-    } catch (error) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Database connection failed' 
-      }, { status: 500 });
-    }
-
     const query = `
-      SELECT 
+      SELECT
         snps,
         strongest_snp_risk_allele,
-        or_or_beta
-      FROM gwas_catalog 
+        or_or_beta,
+        study_accession
+      FROM gwas_catalog
       WHERE rowid = ?
       AND snps IS NOT NULL
       AND strongest_snp_risk_allele IS NOT NULL
       AND or_or_beta IS NOT NULL
     `;
 
-    const statement = db.prepare(query);
-    const study = statement.get(studyId) as {
+    const study = await executeQuerySingle<{
       snps: string | null;
       strongest_snp_risk_allele: string | null;
       or_or_beta: string | null;
-    } | undefined;
+      study_accession: string | null;
+    }>(query, [studyId]);
 
     if (!study) {
       return NextResponse.json({ 
@@ -123,6 +115,7 @@ export async function POST(request: NextRequest) {
             riskScore: score,
             riskLevel: level,
             matchedSnp: snp,
+            gwasId: study.study_accession || undefined,
           } as UserStudyResult
         });
       }

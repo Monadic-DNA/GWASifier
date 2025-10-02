@@ -80,6 +80,13 @@ body {
   gap: 1rem;
 }
 
+.menu-separator {
+  width: 1px;
+  height: 2rem;
+  background: var(--border-color);
+  opacity: 0.5;
+}
+
 .status-section {
   display: flex;
   align-items: center;
