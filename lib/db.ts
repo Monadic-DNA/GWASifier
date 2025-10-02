@@ -58,6 +58,10 @@ function resolveDatabasePath(): string {
   return path.join(process.cwd(), "localdata", "gwas_catalog.sqlite");
 }
 
+export function getDbType(): 'sqlite' | 'postgres' {
+  return process.env.POSTGRES_DB ? 'postgres' : 'sqlite';
+}
+
 export function getDb(): DbConnection {
   // Check if PostgreSQL connection string is provided
   const postgresDb = process.env.POSTGRES_DB;

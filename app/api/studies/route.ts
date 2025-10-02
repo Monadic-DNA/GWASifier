@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { executeQuery, executeQuerySingle } from "@/lib/db";
+import { executeQuery, executeQuerySingle, getDbType } from "@/lib/db";
 import {
   computeQualityFlags,
   formatNumber,
@@ -260,7 +260,14 @@ export async function GET(request: NextRequest) {
   const isShowingAllStudies = sort === "recent" && !excludeLowQuality && !excludeMissingGenotype &&
     !minSampleSize && !maxPValueRaw && !minLogPRaw;
   const orderClause = isShowingAllStudies ? "ORDER BY date DESC" : "";
-  const baseQuery = `SELECT rowid AS id,
+
+  // Use appropriate ID selection based on database type
+  const dbType = getDbType();
+  const idSelection = dbType === 'postgres'
+    ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\')) AS id'
+    : 'rowid AS id';
+
+  const baseQuery = `SELECT ${idSelection},
        study_accession,
        study,
        disease_trait,

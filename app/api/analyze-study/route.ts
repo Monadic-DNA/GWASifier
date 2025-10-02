@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { executeQuerySingle } from "@/lib/db";
+import { executeQuerySingle, getDbType } from "@/lib/db";
 
 type UserStudyResult = {
   hasMatch: boolean;
@@ -66,6 +66,13 @@ export async function POST(request: NextRequest) {
     const genotypeMap = new Map<string, string>(Object.entries(genotypeData));
 
     // Get study from database
+    // Use appropriate ID lookup based on database type
+    const dbType = getDbType();
+
+    const idCondition = dbType === 'postgres'
+      ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\')) = ?'
+      : 'rowid = ?';
+
     const query = `
       SELECT
         snps,
@@ -73,10 +80,10 @@ export async function POST(request: NextRequest) {
         or_or_beta,
         study_accession
       FROM gwas_catalog
-      WHERE rowid = ?
-      AND snps IS NOT NULL
-      AND strongest_snp_risk_allele IS NOT NULL
-      AND or_or_beta IS NOT NULL
+      WHERE ${idCondition}
+      AND snps IS NOT NULL AND snps != ''
+      AND strongest_snp_risk_allele IS NOT NULL AND strongest_snp_risk_allele != ''
+      AND or_or_beta IS NOT NULL AND or_or_beta != ''
     `;
 
     const study = await executeQuerySingle<{
@@ -95,16 +102,16 @@ export async function POST(request: NextRequest) {
 
     // Extract SNP IDs from the study
     const studySnps = (study.snps || '').split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
-    
+
     // Find matching SNPs
     for (const snp of studySnps) {
       if (genotypeMap.has(snp)) {
         const userGenotype = genotypeMap.get(snp)!;
         const riskAllele = study.strongest_snp_risk_allele || '';
         const effectSize = study.or_or_beta || '';
-        
+
         const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize);
-        
+
         return NextResponse.json({
           success: true,
           result: {
@@ -122,6 +129,8 @@ export async function POST(request: NextRequest) {
     }
 
     // No matches found
+    console.log('No SNP matches found. Study SNPs:', studySnps, 'User has:', genotypeMap.size, 'variants');
+
     return NextResponse.json({
       success: true,
       result: {
