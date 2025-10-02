@@ -39,7 +39,7 @@ function getSSLConfig(connectionString: string) {
   if (connectionString.includes('digitalocean.com') || connectionString.includes('.db.ondigitalocean.com') || connectionString.includes('ondigitalocean.com')) {
     return {
       rejectUnauthorized: false, // Accept DigitalOcean's certificates
-      checkServerIdentity: () => {}, // Skip hostname verification
+      checkServerIdentity: () => undefined, // Skip hostname verification
     };
   }
 
