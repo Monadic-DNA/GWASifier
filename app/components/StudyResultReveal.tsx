@@ -5,6 +5,7 @@ import { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
 import DisclaimerModal from "./DisclaimerModal";
+import LLMCommentaryModal from "./LLMCommentaryModal";
 import { SavedResult } from "@/lib/results-manager";
 
 type UserStudyResult = {
@@ -27,12 +28,13 @@ type StudyResultRevealProps = {
 
 export default function StudyResultReveal({ studyId, snps, traitName, studyTitle }: StudyResultRevealProps) {
   const { genotypeData, isUploaded } = useGenotype();
-  const { addResult, hasResult, getResult } = useResults();
+  const { addResult, hasResult, getResult, savedResults } = useResults();
   const [result, setResult] = useState<UserStudyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showCommentary, setShowCommentary] = useState(false);
 
   // Check if we already have a saved result
   useEffect(() => {
@@ -173,21 +175,42 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
       );
     }
 
+    const savedResult = getResult(studyId);
+
     return (
-      <div 
-        className={`user-result has-match risk-${result.riskLevel}`}
-        title={generateTooltip(result)}
-      >
-        <div className="user-genotype">
-          Your genotype: <span className="genotype-value">{result.userGenotype}</span>
+      <>
+        {savedResult && (
+          <LLMCommentaryModal
+            isOpen={showCommentary}
+            onClose={() => setShowCommentary(false)}
+            currentResult={savedResult}
+            allResults={savedResults}
+          />
+        )}
+        <div className="result-with-commentary">
+          <div
+            className={`user-result has-match risk-${result.riskLevel}`}
+            title={generateTooltip(result)}
+          >
+            <div className="user-genotype">
+              Your genotype: <span className="genotype-value">{result.userGenotype}</span>
+            </div>
+            <div className={`risk-score risk-${result.riskLevel}`}>
+              {formatRiskScore(result.riskScore!, result.riskLevel!)}
+              <span className="risk-label">
+                {result.riskLevel === 'increased' ? '↑' : result.riskLevel === 'decreased' ? '↓' : '→'}
+              </span>
+            </div>
+          </div>
+          <button
+            className="commentary-button"
+            onClick={() => setShowCommentary(true)}
+            title="Get private AI analysis powered by Nillion's nilAI. Your data is processed securely in a Trusted Execution Environment and is not visible to Monadic DNA."
+          >
+            🔒 Private AI Analysis
+          </button>
         </div>
-        <div className={`risk-score risk-${result.riskLevel}`}>
-          {formatRiskScore(result.riskScore!, result.riskLevel!)}
-          <span className="risk-label">
-            {result.riskLevel === 'increased' ? '↑' : result.riskLevel === 'decreased' ? '↓' : '→'}
-          </span>
-        </div>
-      </div>
+      </>
     );
   }
 

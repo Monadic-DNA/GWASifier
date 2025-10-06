@@ -104,10 +104,9 @@ export function useGenotype() {
 
 export default function UserDataUpload() {
   const { uploadGenotype, clearGenotype, isUploaded, isLoading, error } = useGenotype();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -122,13 +121,10 @@ export default function UserDataUpload() {
       return;
     }
 
-    setSelectedFile(file);
-  };
+    // Automatically upload the file
+    await uploadGenotype(file);
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    await uploadGenotype(selectedFile);
-    setSelectedFile(null);
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -153,32 +149,18 @@ export default function UserDataUpload() {
 
   return (
     <div className="genotype-upload">
-      {!selectedFile ? (
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".txt,.tsv,.csv"
-            onChange={handleFileSelect}
-            className="genotype-file-input"
-            id="genotype-upload"
-          />
-          <label htmlFor="genotype-upload" className="genotype-upload-label">
-            Load genetic data
-          </label>
-        </>
-      ) : (
-        <div className="genotype-file-selected">
-          <span>{selectedFile.name}</span>
-          <button 
-            className="genotype-upload-button" 
-            onClick={handleUpload}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Load'}
-          </button>
-        </div>
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.tsv,.csv"
+        onChange={handleFileSelect}
+        className="genotype-file-input"
+        id="genotype-upload"
+        disabled={isLoading}
+      />
+      <label htmlFor="genotype-upload" className={`genotype-upload-label ${isLoading ? 'loading' : ''}`}>
+        {isLoading ? 'Loading...' : 'Load genetic data'}
+      </label>
       {error && (
         <div className="genotype-error" title={error}>
           Upload failed
