@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UserDataUpload, { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 
@@ -8,6 +8,28 @@ export default function MenuBar() {
   const { isUploaded, genotypeData, fileHash } = useGenotype();
   const { savedResults, saveToFile, loadFromFile, clearResults } = useResults();
   const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    // Detect system preference on mount
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = isDark ? "dark" : "light";
+    setTheme(initialTheme);
+
+    // Apply initial theme
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    document.documentElement.style.colorScheme = initialTheme;
+  }, []);
+
+  useEffect(() => {
+    // Apply theme changes
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const handleLoadFromFile = async () => {
     setIsLoadingFile(true);
@@ -25,9 +47,9 @@ export default function MenuBar() {
       <div className="menu-left">
         <h1 className="app-title">
           GWASifier by{" "}
-          <a 
-            href="https://monadicdna.com/" 
-            target="_blank" 
+          <a
+            href="https://monadicdna.com/"
+            target="_blank"
             rel="noopener noreferrer"
             className="monadic-link"
           >
@@ -36,7 +58,7 @@ export default function MenuBar() {
         </h1>
         <span className="app-subtitle">GWAS Catalog Explorer</span>
       </div>
-      
+
       <div className="menu-right">
         <div className="status-section">
           {isUploaded && genotypeData && (
@@ -77,8 +99,8 @@ export default function MenuBar() {
         )}
 
         <div className="file-controls">
-          <button 
-            className="control-button load" 
+          <button
+            className="control-button load"
             onClick={handleLoadFromFile}
             disabled={isLoadingFile}
             title="Load results from a file"
@@ -86,6 +108,15 @@ export default function MenuBar() {
             {isLoadingFile ? '⏳ Loading...' : '📁 Load Results'}
           </button>
         </div>
+
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
       </div>
     </div>
   );
