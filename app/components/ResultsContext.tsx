@@ -45,7 +45,7 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
 
   const saveToFile = (genotypeSize?: number, genotypeHash?: string) => {
     const session: SavedSession = {
-      fileName: `gwasifier_results_${new Date().toISOString().split('T')[0]}`,
+      fileName: `monadic_dna_explorer_results_${new Date().toISOString().split('T')[0]}`,
       createdDate: new Date().toISOString(),
       totalVariants: genotypeSize || 0,
       genotypeFileHash: genotypeHash,

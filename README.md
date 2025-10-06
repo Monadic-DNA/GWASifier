@@ -1,6 +1,13 @@
-# GWASifier
+# Monadic DNA Explorer
 
-Match your DNA data against an open ended catalogue of DNA traits
+Match your DNA data against an open ended catalogue of DNA traits with private AI-powered analysis
+
+## Features
+
+- Interactive exploration of GWAS Catalog studies with quality-aware filtering
+- Upload and analyze your personal genetic data (23andMe, AncestryDNA, etc.)
+- Private AI analysis powered by Nillion's nilAI - your data is processed in a Trusted Execution Environment
+- Save and export your results
 
 ## Development
 
@@ -12,9 +19,9 @@ Create a new SQLite database at `localdata/gwas_catalog.sqlite`.
 
 Load the contents of the TSV file into the SQLite database using your favorite method.
 
-### Running the GWAS Catalog Explorer
+### Running the Monadic DNA Explorer
 
-The repository now includes a Next.js single-page application for exploring studies stored in `localdata/gwas_catalog.sqlite`.
+The repository includes a Next.js single-page application for exploring studies stored in `localdata/gwas_catalog.sqlite`.
 
 ```bash
 npm install
@@ -49,6 +56,7 @@ npm start
 
 - `POSTGRES_DB`: PostgreSQL connection string (if set, takes precedence over SQLite)
 - `GWAS_DB_PATH`: Path to SQLite database file (only used if `POSTGRES_DB` is not set)
+- `NILLION_API_KEY`: (Optional) API key for Nillion's nilAI to enable private AI analysis of results
 
 ### Database Schema
 

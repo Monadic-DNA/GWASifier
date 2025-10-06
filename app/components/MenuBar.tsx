@@ -46,7 +46,6 @@ export default function MenuBar() {
     <div className="menu-bar">
       <div className="menu-left">
         <h1 className="app-title">
-          GWASifier by{" "}
           <a
             href="https://monadicdna.com/"
             target="_blank"
@@ -54,9 +53,10 @@ export default function MenuBar() {
             className="monadic-link"
           >
             Monadic DNA
-          </a>
+          </a>{" "}
+          Explorer
         </h1>
-        <span className="app-subtitle">GWAS Catalog Explorer</span>
+        <span className="app-subtitle">Explore GWAS Catalog Studies</span>
       </div>
 
       <div className="menu-right">

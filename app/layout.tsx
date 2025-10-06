@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GWASifier by Monadic DNA",
-  description: "Interactive exploration of GWAS Catalog studies with quality-aware filtering",
+  title: "Monadic DNA Explorer",
+  description: "Interactive exploration of GWAS Catalog studies with quality-aware filtering and private AI analysis",
 };
 
 export default function RootLayout({
