@@ -4,7 +4,27 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Monadic DNA Explorer",
-  description: "Interactive exploration of GWAS Catalog studies with quality-aware filtering and private AI analysis",
+  description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data with privacy-focused AI insights",
+  keywords: ["GWAS", "genetics", "DNA analysis", "genome explorer", "genetic studies", "GWAS Catalog", "personal genomics"],
+  authors: [{ name: "Recherché Inc" }],
+  openGraph: {
+    type: "website",
+    title: "Monadic DNA Explorer",
+    description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data",
+    siteName: "Monadic DNA Explorer",
+    url: "https://monadicdna.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Monadic DNA Explorer",
+    description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data",
+    creator: "@MonadicDNA",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  metadataBase: new URL("https://monadicdna.com"),
 };
 
 export default function RootLayout({
