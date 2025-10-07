@@ -126,6 +126,16 @@ body {
   gap: 1rem;
 }
 
+.genotype-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 8px;
+}
+
 .results-section {
   display: flex;
   align-items: center;

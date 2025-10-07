@@ -60,7 +60,7 @@ export default function MenuBar() {
       </div>
 
       <div className="menu-right">
-        <div className="status-section">
+        <div className="genotype-section">
           {isUploaded && genotypeData && (
             <span className="stat-item">
               {genotypeData.size.toLocaleString()} variants loaded
@@ -74,7 +74,7 @@ export default function MenuBar() {
             <div className="menu-separator" />
             <div className="results-section">
               <span className="stat-item">
-                {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} saved
+                {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
               </span>
               <div className="results-controls">
                 <button
