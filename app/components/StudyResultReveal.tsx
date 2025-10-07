@@ -4,20 +4,10 @@ import { useState, useEffect } from "react";
 import { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
+import { analyzeStudyClientSide, UserStudyResult } from "@/lib/risk-calculator";
 import DisclaimerModal from "./DisclaimerModal";
 import LLMCommentaryModal from "./LLMCommentaryModal";
 import { SavedResult } from "@/lib/results-manager";
-
-type UserStudyResult = {
-  hasMatch: boolean;
-  userGenotype?: string;
-  riskAllele?: string;
-  effectSize?: string;
-  riskScore?: number;
-  riskLevel?: 'increased' | 'decreased' | 'neutral';
-  matchedSnp?: string;
-  gwasId?: string;
-};
 
 type StudyResultRevealProps = {
   studyId: number;
@@ -75,9 +65,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     setError(null);
 
     try {
-      // Convert Map to plain object for JSON serialization
-      const genotypeObj = Object.fromEntries(genotypeData);
-
+      // Fetch study metadata only (no user data sent to server)
       const response = await fetch('/api/analyze-study', {
         method: 'POST',
         headers: {
@@ -85,32 +73,40 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
         },
         body: JSON.stringify({
           studyId,
-          genotypeData: genotypeObj,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to analyze study');
+        throw new Error(data.error || 'Failed to load study data');
       }
 
-      setResult(data.result);
+      // Perform analysis entirely client-side
+      const analysisResult = analyzeStudyClientSide(
+        genotypeData,
+        data.study.snps,
+        data.study.riskAllele,
+        data.study.effectSize,
+        data.study.gwasId
+      );
+
+      setResult(analysisResult);
       setIsRevealed(true);
 
       // Save the result if it has a match
-      if (data.result.hasMatch) {
+      if (analysisResult.hasMatch) {
         const savedResult: SavedResult = {
           studyId,
-          gwasId: data.result.gwasId,
+          gwasId: analysisResult.gwasId,
           traitName,
           studyTitle,
-          userGenotype: data.result.userGenotype!,
-          riskAllele: data.result.riskAllele!,
-          effectSize: data.result.effectSize!,
-          riskScore: data.result.riskScore!,
-          riskLevel: data.result.riskLevel!,
-          matchedSnp: data.result.matchedSnp!,
+          userGenotype: analysisResult.userGenotype!,
+          riskAllele: analysisResult.riskAllele!,
+          effectSize: analysisResult.effectSize!,
+          riskScore: analysisResult.riskScore!,
+          riskLevel: analysisResult.riskLevel!,
+          matchedSnp: analysisResult.matchedSnp!,
           analysisDate: new Date().toISOString(),
         };
         addResult(savedResult);

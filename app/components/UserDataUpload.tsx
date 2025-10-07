@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, createContext, useContext } from "react";
-import { GenotypeData } from "@/lib/genotype-parser";
+import { GenotypeData, detectAndParseGenotypeFile, validateFileSize, validateFileFormat } from "@/lib/genotype-parser";
 import { calculateFileHash } from "@/lib/file-hash";
 
 type GenotypeContextType = {
@@ -31,27 +31,30 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      // Read file content to calculate hash
+      // Validate file size (50MB limit)
+      if (!validateFileSize(file, 50)) {
+        throw new Error('File too large. Maximum size is 50MB.');
+      }
+
+      // Validate file format
+      if (!validateFileFormat(file)) {
+        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe or Monadic DNA.');
+      }
+
+      // Read and parse file entirely client-side
       const fileContent = await file.text();
       const hash = calculateFileHash(fileContent);
 
-      const formData = new FormData();
-      formData.append('genotype', file);
+      // Parse the genotype file client-side
+      const parseResult = detectAndParseGenotypeFile(fileContent);
 
-      const response = await fetch('/api/parse-genotype', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to parse genotype data');
+      if (!parseResult.success) {
+        throw new Error(parseResult.error || 'Failed to parse genotype data');
       }
 
       // Create a map for quick SNP lookup
       const genotypeMap = new Map<string, string>();
-      data.data.forEach((variant: GenotypeData) => {
+      parseResult.data!.forEach((variant: GenotypeData) => {
         genotypeMap.set(variant.rsid, variant.genotype);
       });
 
