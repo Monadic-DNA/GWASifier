@@ -62,16 +62,9 @@ export default function MenuBar() {
       <div className="menu-right">
         <div className="status-section">
           {isUploaded && genotypeData && (
-            <div className="genotype-stats">
-              <span className="stat-item">
-                {genotypeData.size.toLocaleString()} variants loaded
-              </span>
-              {savedResults.length > 0 && (
-                <span className="stat-item">
-                  {savedResults.length} results saved
-                </span>
-              )}
-            </div>
+            <span className="stat-item">
+              {genotypeData.size.toLocaleString()} variants loaded
+            </span>
           )}
           <UserDataUpload />
         </div>
@@ -79,35 +72,37 @@ export default function MenuBar() {
         {savedResults.length > 0 && (
           <>
             <div className="menu-separator" />
-            <div className="results-controls">
-            <button
-              className="control-button save"
-              onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
-              title="Save your results to a file"
-            >
-              💾 Save
-            </button>
-            <button 
-              className="control-button clear" 
-              onClick={clearResults}
-              title="Clear all saved results"
-            >
-              🗑️ Clear
-            </button>
-          </div>
+            <div className="results-section">
+              <span className="stat-item">
+                {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} saved
+              </span>
+              <div className="results-controls">
+                <button
+                  className="control-button load"
+                  onClick={handleLoadFromFile}
+                  disabled={isLoadingFile}
+                  title="Load results from a file"
+                >
+                  {isLoadingFile ? '⏳ Loading...' : '📁 Load'}
+                </button>
+                <button
+                  className="control-button save"
+                  onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
+                  title="Export your results to a JSON file"
+                >
+                  💾 Export
+                </button>
+                <button
+                  className="control-button clear"
+                  onClick={clearResults}
+                  title="Clear all saved results"
+                >
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
           </>
         )}
-
-        <div className="file-controls">
-          <button
-            className="control-button load"
-            onClick={handleLoadFromFile}
-            disabled={isLoadingFile}
-            title="Load results from a file"
-          >
-            {isLoadingFile ? '⏳ Loading...' : '📁 Load Results'}
-          </button>
-        </div>
 
         <button
           className="theme-toggle"
