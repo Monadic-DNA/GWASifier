@@ -320,9 +320,10 @@ body {
   backdrop-filter: blur(8px);
   z-index: 2000;
   overflow-y: auto;
-  display: grid;
-  place-items: center;
-  padding: 2rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5vh 1rem 2rem;
 }
 
 .modal-dialog {
@@ -1403,8 +1404,24 @@ tbody tr:hover {
 
 .commentary-modal {
   max-width: 700px;
-  max-height: 90vh;
-  margin: 2rem auto;
+  max-height: 88vh;
+  height: 88vh;
+}
+
+.commentary-powered-by-header {
+  padding: 0 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.commentary-powered-by-header .powered-by {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
 }
 
 .commentary-result-summary {
@@ -1444,8 +1461,7 @@ tbody tr:hover {
   color: #374151;
   line-height: 1.6;
   font-size: 0.9rem;
-  min-height: 200px;
-  max-height: 500px;
+  min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
 }

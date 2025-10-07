@@ -40,6 +40,7 @@ export default function LLMCommentaryModal({
         body: JSON.stringify({
           currentResult,
           allResults,
+          studyId: currentResult.studyId,
         }),
       });
 
@@ -77,6 +78,13 @@ export default function LLMCommentaryModal({
       >
         <div className="modal-content">
           <h2>🤖 AI Commentary on Your Result</h2>
+
+          <div className="commentary-powered-by-header">
+            <p className="powered-by">
+              🔒 Powered by <a href="https://nillion.com" target="_blank" rel="noopener noreferrer">Nillion nilAI</a> -
+              Privacy-preserving AI in a Trusted Execution Environment
+            </p>
+          </div>
 
           <div className="commentary-result-summary">
             <h3>{currentResult.traitName}</h3>
@@ -117,12 +125,6 @@ export default function LLMCommentaryModal({
                   {commentary.split('\n\n').map((paragraph, idx) => (
                     <p key={idx}>{paragraph}</p>
                   ))}
-                </div>
-                <div className="commentary-footer">
-                  <p className="powered-by">
-                    🔒 Powered by <a href="https://nillion.com" target="_blank" rel="noopener noreferrer">Nillion nilAI</a> -
-                    Privacy-preserving AI in a Trusted Execution Environment
-                  </p>
                 </div>
               </div>
             )}
