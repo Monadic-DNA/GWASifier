@@ -8,6 +8,7 @@ import MenuBar from "./components/MenuBar";
 import VariantChips from "./components/VariantChips";
 import Footer from "./components/Footer";
 import DisclaimerModal from "./components/DisclaimerModal";
+import TermsAcceptanceModal from "./components/TermsAcceptanceModal";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
@@ -150,6 +151,15 @@ function MainContent() {
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
   const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Check if user has accepted terms on mount
+  useEffect(() => {
+    const termsAccepted = localStorage.getItem('terms_accepted');
+    if (!termsAccepted) {
+      setShowTermsModal(true);
+    }
+  }, []);
 
   const updateFilter = useCallback(<Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
     setFilters((prev) => {
@@ -346,7 +356,11 @@ function MainContent() {
 
   return (
     <div className="app-container">
-      <DisclaimerModal 
+      <TermsAcceptanceModal
+        isOpen={showTermsModal}
+        onAccept={() => setShowTermsModal(false)}
+      />
+      <DisclaimerModal
         isOpen={showInitialDisclaimer}
         onClose={() => setShowInitialDisclaimer(false)}
         type="initial"
