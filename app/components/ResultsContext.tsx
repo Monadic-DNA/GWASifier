@@ -24,7 +24,7 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
   // Load results from localStorage on mount
   useEffect(() => {
     const stored = ResultsManager.loadFromLocalStorage();
-    if (stored.length > 0) {
+    if (stored && stored.length > 0) {
       setSavedResults(stored);
     }
   }, []);
