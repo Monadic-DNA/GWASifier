@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data with privacy-focused AI insights",
   keywords: ["GWAS", "genetics", "DNA analysis", "genome explorer", "genetic studies", "GWAS Catalog", "personal genomics"],
   authors: [{ name: "Recherché Inc" }],
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-icon.png',
+  },
   openGraph: {
     type: "website",
     title: "Monadic DNA Explorer",

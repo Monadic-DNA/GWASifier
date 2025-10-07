@@ -104,6 +104,16 @@ export default function MenuBar() {
           </>
         )}
 
+        <a
+          href="https://recherche.discourse.group/c/public/monadic-dna/30"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="feedback-button"
+          title="Share your feedback on our forum"
+        >
+          💬 Feedback
+        </a>
+
         <button
           className="theme-toggle"
           onClick={toggleTheme}
