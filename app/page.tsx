@@ -8,6 +8,7 @@ import MenuBar from "./components/MenuBar";
 import VariantChips from "./components/VariantChips";
 import Footer from "./components/Footer";
 import DisclaimerModal from "./components/DisclaimerModal";
+import TermsAcceptanceModal from "./components/TermsAcceptanceModal";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
@@ -150,6 +151,16 @@ function MainContent() {
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
   const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [loadTime, setLoadTime] = useState<number | null>(null);
+
+  // Check if user has accepted terms on mount
+  useEffect(() => {
+    const termsAccepted = localStorage.getItem('terms_accepted');
+    if (!termsAccepted) {
+      setShowTermsModal(true);
+    }
+  }, []);
 
   const updateFilter = useCallback(<Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
     setFilters((prev) => {
@@ -194,6 +205,7 @@ function MainContent() {
   useEffect(() => {
     const controller = new AbortController();
     const query = buildQuery(filters);
+    const startTime = performance.now();
     setLoading(true);
     setError(null);
 
@@ -207,30 +219,33 @@ function MainContent() {
         if (payload.error) {
           throw new Error(payload.error);
         }
-        
+
         let filteredData = payload.data ?? [];
-        
+
         // Client-side filtering for user SNPs
         if (filters.requireUserSNPs && genotypeData) {
           filteredData = filteredData.filter(study => {
             // First check if study has matching SNPs with user data
             const hasUserSNPs = hasMatchingSNPs(genotypeData, study.snps);
             if (!hasUserSNPs) return false;
-            
+
             // If "Require genotype" is also enabled, ensure the study has genotype data
             if (filters.excludeMissingGenotype) {
-              const hasGenotype = study.strongest_snp_risk_allele && 
+              const hasGenotype = study.strongest_snp_risk_allele &&
                 study.strongest_snp_risk_allele.trim().length > 0 &&
                 study.strongest_snp_risk_allele.trim() !== '?' &&
                 study.strongest_snp_risk_allele.trim() !== 'NR' &&
                 !study.strongest_snp_risk_allele.includes('?');
               return hasGenotype;
             }
-            
+
             return true;
           });
         }
-        
+
+        const endTime = performance.now();
+        setLoadTime(endTime - startTime);
+
         setStudies(filteredData);
         setMeta({
           total: filteredData.length,
@@ -311,6 +326,9 @@ function MainContent() {
       `${studies.length} of ${meta.total} quality-filtered studies`,
       `${meta.sourceCount.toLocaleString()} matches before quality filters`,
     ];
+    if (loadTime !== null) {
+      parts.push(`loaded in ${Math.round(loadTime)}ms`);
+    }
     const breakdown: string[] = [];
     if (qualitySummary.high > 0) {
       breakdown.push(`${qualitySummary.high} high`);
@@ -336,6 +354,7 @@ function MainContent() {
     meta,
     loading,
     error,
+    loadTime,
     qualitySummary.high,
     qualitySummary.medium,
     qualitySummary.low,
@@ -346,7 +365,11 @@ function MainContent() {
 
   return (
     <div className="app-container">
-      <DisclaimerModal 
+      <TermsAcceptanceModal
+        isOpen={showTermsModal}
+        onAccept={() => setShowTermsModal(false)}
+      />
+      <DisclaimerModal
         isOpen={showInitialDisclaimer}
         onClose={() => setShowInitialDisclaimer(false)}
         type="initial"

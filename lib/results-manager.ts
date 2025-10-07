@@ -21,19 +21,19 @@ export type SavedSession = {
 };
 
 export class ResultsManager {
-  private static STORAGE_KEY = 'gwasifier_results';
+  private static STORAGE_KEY = 'monadic_dna_explorer_results';
 
   static saveResultsToFile(session: SavedSession): void {
     const dataStr = JSON.stringify(session, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `gwasifier_results_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `monadic_dna_explorer_results_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(link.href);
   }
 

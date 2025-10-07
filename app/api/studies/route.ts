@@ -257,10 +257,6 @@ export async function GET(request: NextRequest) {
 
   const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
 
-  const isShowingAllStudies = sort === "recent" && !excludeLowQuality && !excludeMissingGenotype &&
-    !minSampleSize && !maxPValueRaw && !minLogPRaw;
-  const orderClause = isShowingAllStudies ? "ORDER BY date DESC" : "";
-
   // Use appropriate ID selection based on database type
   const dbType = getDbType();
   const idSelection = dbType === 'postgres'
@@ -289,11 +285,8 @@ export async function GET(request: NextRequest) {
        snps
     FROM gwas_catalog
     ${whereClause}
-    ${orderClause}
     LIMIT ?`;
-  const rawLimit = isShowingAllStudies
-    ? Math.min(limit * 8, 2000)
-    : Math.min(limit * 4, 800);
+  const rawLimit = Math.min(limit * 4, 800);
 
   try {
     const rawRows = await executeQuery<RawStudy>(baseQuery, [...params, rawLimit]);

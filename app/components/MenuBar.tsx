@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UserDataUpload, { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 
@@ -8,6 +8,28 @@ export default function MenuBar() {
   const { isUploaded, genotypeData, fileHash } = useGenotype();
   const { savedResults, saveToFile, loadFromFile, clearResults } = useResults();
   const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    // Detect system preference on mount
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme = isDark ? "dark" : "light";
+    setTheme(initialTheme);
+
+    // Apply initial theme
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    document.documentElement.style.colorScheme = initialTheme;
+  }, []);
+
+  useEffect(() => {
+    // Apply theme changes
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const handleLoadFromFile = async () => {
     setIsLoadingFile(true);
@@ -24,32 +46,25 @@ export default function MenuBar() {
     <div className="menu-bar">
       <div className="menu-left">
         <h1 className="app-title">
-          GWASifier by{" "}
-          <a 
-            href="https://monadicdna.com/" 
-            target="_blank" 
+          <a
+            href="https://monadicdna.com/"
+            target="_blank"
             rel="noopener noreferrer"
             className="monadic-link"
           >
             Monadic DNA
-          </a>
+          </a>{" "}
+          Explorer
         </h1>
-        <span className="app-subtitle">GWAS Catalog Explorer</span>
+        <span className="app-subtitle">Explore thousands of genetic studies from the GWAS Catalog, plug in your own DNA</span>
       </div>
-      
+
       <div className="menu-right">
-        <div className="status-section">
+        <div className="genotype-section">
           {isUploaded && genotypeData && (
-            <div className="genotype-stats">
-              <span className="stat-item">
-                {genotypeData.size.toLocaleString()} variants loaded
-              </span>
-              {savedResults.length > 0 && (
-                <span className="stat-item">
-                  {savedResults.length} results saved
-                </span>
-              )}
-            </div>
+            <span className="stat-item">
+              {genotypeData.size.toLocaleString()} variants loaded
+            </span>
           )}
           <UserDataUpload />
         </div>
@@ -57,35 +72,56 @@ export default function MenuBar() {
         {savedResults.length > 0 && (
           <>
             <div className="menu-separator" />
-            <div className="results-controls">
-            <button
-              className="control-button save"
-              onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
-              title="Save your results to a file"
-            >
-              💾 Save
-            </button>
-            <button 
-              className="control-button clear" 
-              onClick={clearResults}
-              title="Clear all saved results"
-            >
-              🗑️ Clear
-            </button>
-          </div>
+            <div className="results-section">
+              <span className="stat-item">
+                {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
+              </span>
+              <div className="results-controls">
+                <button
+                  className="control-button load"
+                  onClick={handleLoadFromFile}
+                  disabled={isLoadingFile}
+                  title="Load results from a file"
+                >
+                  {isLoadingFile ? '⏳ Loading...' : '📁 Load'}
+                </button>
+                <button
+                  className="control-button save"
+                  onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
+                  title="Export your results to a JSON file"
+                >
+                  💾 Export
+                </button>
+                <button
+                  className="control-button clear"
+                  onClick={clearResults}
+                  title="Clear all saved results"
+                >
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
           </>
         )}
 
-        <div className="file-controls">
-          <button 
-            className="control-button load" 
-            onClick={handleLoadFromFile}
-            disabled={isLoadingFile}
-            title="Load results from a file"
-          >
-            {isLoadingFile ? '⏳ Loading...' : '📁 Load Results'}
-          </button>
-        </div>
+        <a
+          href="https://recherche.discourse.group/c/public/monadic-dna/30"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="feedback-button"
+          title="Share your feedback on our forum"
+        >
+          💬 Feedback
+        </a>
+
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
       </div>
     </div>
   );

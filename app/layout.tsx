@@ -1,9 +1,37 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GWASifier by Monadic DNA",
-  description: "Interactive exploration of GWAS Catalog studies with quality-aware filtering",
+  title: "Monadic DNA Explorer",
+  description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data with privacy-focused AI insights",
+  keywords: ["GWAS", "genetics", "DNA analysis", "genome explorer", "genetic studies", "GWAS Catalog", "personal genomics"],
+  authors: [{ name: "Recherché Inc" }],
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-icon.png',
+  },
+  openGraph: {
+    type: "website",
+    title: "Monadic DNA Explorer",
+    description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data",
+    siteName: "Monadic DNA Explorer",
+    url: "https://monadicdna.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Monadic DNA Explorer",
+    description: "Explore thousands of genetic studies from the GWAS Catalog and analyze your own DNA data",
+    creator: "@MonadicDNA",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  metadataBase: new URL("https://monadicdna.com"),
 };
 
 export default function RootLayout({
@@ -13,6 +41,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-HP3FB0GX80"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-HP3FB0GX80', {
+              anonymize_ip: true,
+            });
+          `}
+        </Script>
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -5,9 +5,9 @@ export default function Footer() {
         <div className="footer-section">
           <p className="copyright">
             © {new Date().getFullYear()}{" "}
-            <a 
-              href="https://recherche.tech/" 
-              target="_blank" 
+            <a
+              href="https://recherche.tech/"
+              target="_blank"
               rel="noopener noreferrer"
               className="footer-link"
             >
@@ -16,13 +16,49 @@ export default function Footer() {
             . All rights reserved.
           </p>
         </div>
-        
+
+        <div className="footer-section social-links">
+          <p>Follow Monadic DNA:</p>
+          <div className="social-icons">
+            <a
+              href="https://x.com/MonadicDNA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              aria-label="X (Twitter)"
+              title="Follow us on X"
+            >
+              𝕏
+            </a>
+            <a
+              href="https://farcaster.xyz/monadicdna"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              aria-label="Farcaster"
+              title="Follow us on Farcaster"
+            >
+              🟪
+            </a>
+            <a
+              href="https://recherche.discourse.group/c/public/monadic-dna/30"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              aria-label="Community Forum"
+              title="Join our community forum"
+            >
+              💬
+            </a>
+          </div>
+        </div>
+
         <div className="footer-section">
           <p className="data-credit">
             Data sourced from the{" "}
-            <a 
-              href="https://www.ebi.ac.uk/gwas/" 
-              target="_blank" 
+            <a
+              href="https://www.ebi.ac.uk/gwas/"
+              target="_blank"
               rel="noopener noreferrer"
               className="footer-link"
             >

@@ -4,19 +4,10 @@ import { useState, useEffect } from "react";
 import { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
+import { analyzeStudyClientSide, UserStudyResult } from "@/lib/risk-calculator";
 import DisclaimerModal from "./DisclaimerModal";
+import LLMCommentaryModal from "./LLMCommentaryModal";
 import { SavedResult } from "@/lib/results-manager";
-
-type UserStudyResult = {
-  hasMatch: boolean;
-  userGenotype?: string;
-  riskAllele?: string;
-  effectSize?: string;
-  riskScore?: number;
-  riskLevel?: 'increased' | 'decreased' | 'neutral';
-  matchedSnp?: string;
-  gwasId?: string;
-};
 
 type StudyResultRevealProps = {
   studyId: number;
@@ -27,12 +18,13 @@ type StudyResultRevealProps = {
 
 export default function StudyResultReveal({ studyId, snps, traitName, studyTitle }: StudyResultRevealProps) {
   const { genotypeData, isUploaded } = useGenotype();
-  const { addResult, hasResult, getResult } = useResults();
+  const { addResult, hasResult, getResult, savedResults } = useResults();
   const [result, setResult] = useState<UserStudyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showCommentary, setShowCommentary] = useState(false);
 
   // Check if we already have a saved result
   useEffect(() => {
@@ -73,9 +65,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     setError(null);
 
     try {
-      // Convert Map to plain object for JSON serialization
-      const genotypeObj = Object.fromEntries(genotypeData);
-
+      // Fetch study metadata only (no user data sent to server)
       const response = await fetch('/api/analyze-study', {
         method: 'POST',
         headers: {
@@ -83,32 +73,40 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
         },
         body: JSON.stringify({
           studyId,
-          genotypeData: genotypeObj,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to analyze study');
+        throw new Error(data.error || 'Failed to load study data');
       }
 
-      setResult(data.result);
+      // Perform analysis entirely client-side
+      const analysisResult = analyzeStudyClientSide(
+        genotypeData,
+        data.study.snps,
+        data.study.riskAllele,
+        data.study.effectSize,
+        data.study.gwasId
+      );
+
+      setResult(analysisResult);
       setIsRevealed(true);
 
       // Save the result if it has a match
-      if (data.result.hasMatch) {
+      if (analysisResult.hasMatch) {
         const savedResult: SavedResult = {
           studyId,
-          gwasId: data.result.gwasId,
+          gwasId: analysisResult.gwasId,
           traitName,
           studyTitle,
-          userGenotype: data.result.userGenotype!,
-          riskAllele: data.result.riskAllele!,
-          effectSize: data.result.effectSize!,
-          riskScore: data.result.riskScore!,
-          riskLevel: data.result.riskLevel!,
-          matchedSnp: data.result.matchedSnp!,
+          userGenotype: analysisResult.userGenotype!,
+          riskAllele: analysisResult.riskAllele!,
+          effectSize: analysisResult.effectSize!,
+          riskScore: analysisResult.riskScore!,
+          riskLevel: analysisResult.riskLevel!,
+          matchedSnp: analysisResult.matchedSnp!,
           analysisDate: new Date().toISOString(),
         };
         addResult(savedResult);
@@ -173,21 +171,42 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
       );
     }
 
+    const savedResult = getResult(studyId);
+
     return (
-      <div 
-        className={`user-result has-match risk-${result.riskLevel}`}
-        title={generateTooltip(result)}
-      >
-        <div className="user-genotype">
-          Your genotype: <span className="genotype-value">{result.userGenotype}</span>
+      <>
+        {savedResult && (
+          <LLMCommentaryModal
+            isOpen={showCommentary}
+            onClose={() => setShowCommentary(false)}
+            currentResult={savedResult}
+            allResults={savedResults}
+          />
+        )}
+        <div className="result-with-commentary">
+          <div
+            className={`user-result has-match risk-${result.riskLevel}`}
+            title={generateTooltip(result)}
+          >
+            <div className="user-genotype">
+              Your genotype: <span className="genotype-value">{result.userGenotype}</span>
+            </div>
+            <div className={`risk-score risk-${result.riskLevel}`}>
+              {formatRiskScore(result.riskScore!, result.riskLevel!)}
+              <span className="risk-label">
+                {result.riskLevel === 'increased' ? '↑' : result.riskLevel === 'decreased' ? '↓' : '→'}
+              </span>
+            </div>
+          </div>
+          <button
+            className="commentary-button"
+            onClick={() => setShowCommentary(true)}
+            title="Get private AI analysis powered by Nillion's nilAI. Your data is processed securely in a Trusted Execution Environment and is not visible to Monadic DNA."
+          >
+            🔒 Private AI Analysis
+          </button>
         </div>
-        <div className={`risk-score risk-${result.riskLevel}`}>
-          {formatRiskScore(result.riskScore!, result.riskLevel!)}
-          <span className="risk-label">
-            {result.riskLevel === 'increased' ? '↑' : result.riskLevel === 'decreased' ? '↓' : '→'}
-          </span>
-        </div>
-      </div>
+      </>
     );
   }
 

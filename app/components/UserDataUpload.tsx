@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, createContext, useContext } from "react";
-import { GenotypeData } from "@/lib/genotype-parser";
+import { GenotypeData, detectAndParseGenotypeFile, validateFileSize, validateFileFormat } from "@/lib/genotype-parser";
 import { calculateFileHash } from "@/lib/file-hash";
 
 type GenotypeContextType = {
@@ -31,27 +31,30 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      // Read file content to calculate hash
+      // Validate file size (50MB limit)
+      if (!validateFileSize(file, 50)) {
+        throw new Error('File too large. Maximum size is 50MB.');
+      }
+
+      // Validate file format
+      if (!validateFileFormat(file)) {
+        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe or Monadic DNA.');
+      }
+
+      // Read and parse file entirely client-side
       const fileContent = await file.text();
       const hash = calculateFileHash(fileContent);
 
-      const formData = new FormData();
-      formData.append('genotype', file);
+      // Parse the genotype file client-side
+      const parseResult = detectAndParseGenotypeFile(fileContent);
 
-      const response = await fetch('/api/parse-genotype', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to parse genotype data');
+      if (!parseResult.success) {
+        throw new Error(parseResult.error || 'Failed to parse genotype data');
       }
 
       // Create a map for quick SNP lookup
       const genotypeMap = new Map<string, string>();
-      data.data.forEach((variant: GenotypeData) => {
+      parseResult.data!.forEach((variant: GenotypeData) => {
         genotypeMap.set(variant.rsid, variant.genotype);
       });
 
@@ -104,10 +107,9 @@ export function useGenotype() {
 
 export default function UserDataUpload() {
   const { uploadGenotype, clearGenotype, isUploaded, isLoading, error } = useGenotype();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -122,13 +124,10 @@ export default function UserDataUpload() {
       return;
     }
 
-    setSelectedFile(file);
-  };
+    // Automatically upload the file
+    await uploadGenotype(file);
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    await uploadGenotype(selectedFile);
-    setSelectedFile(null);
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -153,32 +152,18 @@ export default function UserDataUpload() {
 
   return (
     <div className="genotype-upload">
-      {!selectedFile ? (
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".txt,.tsv,.csv"
-            onChange={handleFileSelect}
-            className="genotype-file-input"
-            id="genotype-upload"
-          />
-          <label htmlFor="genotype-upload" className="genotype-upload-label">
-            Load genetic data
-          </label>
-        </>
-      ) : (
-        <div className="genotype-file-selected">
-          <span>{selectedFile.name}</span>
-          <button 
-            className="genotype-upload-button" 
-            onClick={handleUpload}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Load'}
-          </button>
-        </div>
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.tsv,.csv"
+        onChange={handleFileSelect}
+        className="genotype-file-input"
+        id="genotype-upload"
+        disabled={isLoading}
+      />
+      <label htmlFor="genotype-upload" className={`genotype-upload-label ${isLoading ? 'loading' : ''}`}>
+        {isLoading ? 'Loading...' : 'Load genetic data'}
+      </label>
       {error && (
         <div className="genotype-error" title={error}>
           Upload failed

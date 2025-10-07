@@ -1,72 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeQuerySingle, getDbType } from "@/lib/db";
 
-type UserStudyResult = {
-  hasMatch: boolean;
-  userGenotype?: string;
-  riskAllele?: string;
-  effectSize?: string;
-  riskScore?: number;
-  riskLevel?: 'increased' | 'decreased' | 'neutral';
-  matchedSnp?: string;
-  gwasId?: string;
-};
-
-function calculateRiskScore(userGenotype: string, riskAllele: string, effectSize: string): {
-  score: number;
-  level: 'increased' | 'decreased' | 'neutral';
-} {
-  // Parse effect size (OR or beta)
-  const effect = parseFloat(effectSize);
-  if (isNaN(effect)) {
-    return { score: 1, level: 'neutral' };
-  }
-
-  // Extract the risk allele (e.g., "rs123-A" -> "A")
-  const riskAlleleBase = riskAllele.split('-').pop() || '';
-  const userAlleles = userGenotype.split('');
-  
-  // Count how many risk alleles the user has (0, 1, or 2)
-  const riskAlleleCount = userAlleles.filter(allele => allele === riskAlleleBase).length;
-  
-  let riskScore: number;
-  let riskLevel: 'increased' | 'decreased' | 'neutral';
-
-  if (effectSize.includes('OR') || effect > 1) {
-    // Odds ratio - higher values mean increased risk
-    riskScore = Math.pow(effect, riskAlleleCount);
-    riskLevel = riskAlleleCount > 0 ? 'increased' : 'neutral';
-  } else {
-    // Beta coefficient - could be positive or negative
-    riskScore = 1 + (effect * riskAlleleCount);
-    if (riskAlleleCount === 0) {
-      riskLevel = 'neutral';
-    } else if (effect > 0) {
-      riskLevel = 'increased';
-    } else {
-      riskLevel = 'decreased';
-    }
-  }
-
-  return { score: Math.max(0.1, riskScore), level: riskLevel };
-}
-
+// This endpoint only returns study metadata - NO user genetic data is processed here
 export async function POST(request: NextRequest) {
   try {
-    const { studyId, genotypeData } = await request.json();
+    const { studyId } = await request.json();
 
-    if (!studyId || !genotypeData) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing study ID or genotype data' 
+    if (!studyId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Missing study ID'
       }, { status: 400 });
     }
 
-    // Create genotype map
-    const genotypeMap = new Map<string, string>(Object.entries(genotypeData));
-
-    // Get study from database
-    // Use appropriate ID lookup based on database type
+    // Get study metadata from database (contains no user data)
     const dbType = getDbType();
 
     const idCondition = dbType === 'postgres'
@@ -94,48 +41,21 @@ export async function POST(request: NextRequest) {
     }>(query, [studyId]);
 
     if (!study) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Study not found or missing required data' 
+      return NextResponse.json({
+        success: false,
+        error: 'Study not found or missing required data'
       }, { status: 404 });
     }
 
-    // Extract SNP IDs from the study
-    const studySnps = (study.snps || '').split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
-
-    // Find matching SNPs
-    for (const snp of studySnps) {
-      if (genotypeMap.has(snp)) {
-        const userGenotype = genotypeMap.get(snp)!;
-        const riskAllele = study.strongest_snp_risk_allele || '';
-        const effectSize = study.or_or_beta || '';
-
-        const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize);
-
-        return NextResponse.json({
-          success: true,
-          result: {
-            hasMatch: true,
-            userGenotype,
-            riskAllele,
-            effectSize,
-            riskScore: score,
-            riskLevel: level,
-            matchedSnp: snp,
-            gwasId: study.study_accession || undefined,
-          } as UserStudyResult
-        });
-      }
-    }
-
-    // No matches found
-    console.log('No SNP matches found. Study SNPs:', studySnps, 'User has:', genotypeMap.size, 'variants');
-
+    // Return only study metadata - client will perform the analysis
     return NextResponse.json({
       success: true,
-      result: {
-        hasMatch: false,
-      } as UserStudyResult
+      study: {
+        snps: study.snps,
+        riskAllele: study.strongest_snp_risk_allele,
+        effectSize: study.or_or_beta,
+        gwasId: study.study_accession,
+      }
     });
 
   } catch (error) {
