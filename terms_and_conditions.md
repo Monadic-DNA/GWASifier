@@ -62,8 +62,10 @@ If you upload data belonging to someone else, you confirm that you have legal au
 ## 7. User Data and Ownership
 
 ### 7.1 Processing
-Uploaded data is processed **locally** in your browser or **transiently in encrypted memory** during an active session.  
+Uploaded data is processed **locally** in your browser or **transiently in encrypted memory** during an active session.
 We do **not** permanently store, back up, or retain user data after the session ends.
+
+If you choose to save individual study results, those analyzed results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are stored locally in your browser's local storage and persist until manually deleted using the "Clear" button.
 
 ### 7.2 Ownership
 You retain full ownership of your uploaded data.  

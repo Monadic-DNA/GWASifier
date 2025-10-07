@@ -21,7 +21,9 @@ We do not:
 ### 2.1 Genetic Data
 - Processed **locally** in your browser or **temporarily in memory** for variant matching.
 - Automatically deleted when the session ends.
-- Never logged, stored, or backed up.
+- Never logged, stored, or backed up on our servers.
+
+If you choose to save individual study results, those analyzed results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are stored locally in your browser's local storage and persist until manually deleted using the "Clear" button.
 
 We do **not** retain, sell, or share genetic data with any party.
 
