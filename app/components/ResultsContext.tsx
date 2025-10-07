@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { SavedResult, SavedSession, ResultsManager } from "@/lib/results-manager";
 
 type ResultsContextType = {
@@ -20,6 +20,14 @@ const ResultsContext = createContext<ResultsContextType | null>(null);
 export function ResultsProvider({ children }: { children: ReactNode }) {
   const [savedResults, setSavedResults] = useState<SavedResult[]>([]);
   const [onResultsLoaded, setOnResultsLoaded] = useState<(() => void) | undefined>();
+
+  // Load results from localStorage on mount
+  useEffect(() => {
+    const stored = ResultsManager.loadFromLocalStorage();
+    if (stored.length > 0) {
+      setSavedResults(stored);
+    }
+  }, []);
 
   const addResult = (result: SavedResult) => {
     setSavedResults(prev => {
