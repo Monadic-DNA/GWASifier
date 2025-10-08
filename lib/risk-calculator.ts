@@ -72,27 +72,33 @@ export function calculateRiskScore(
 
   if (effectType === 'OR') {
     // Odds ratio: OR > 1 increases risk, OR < 1 decreases risk (protective)
-    riskScore = Math.pow(effect, riskAlleleCount);
+    // Non-carriers are ALWAYS the reference baseline (1.0) in GWAS studies
 
-    // For protective alleles (OR < 1), non-carriers have comparatively higher risk
     if (effect < 1) {
+      // Protective allele (OR < 1)
       if (riskAlleleCount === 0) {
-        // No protective alleles = higher risk relative to carriers
-        riskLevel = 'increased';
-        riskScore = 1 / effect; // Reciprocal to show relative risk
+        // No protective alleles = reference baseline
+        riskLevel = 'neutral';
+        riskScore = 1.0;
       } else {
         // Has protective alleles = decreased risk
         riskLevel = 'decreased';
+        riskScore = Math.pow(effect, riskAlleleCount);
       }
     } else if (effect > 1) {
-      // Risk-increasing alleles
+      // Risk-increasing allele (OR > 1)
       if (riskAlleleCount === 0) {
+        // No risk alleles = reference baseline
         riskLevel = 'neutral';
+        riskScore = 1.0;
       } else {
+        // Has risk alleles = increased risk
         riskLevel = 'increased';
+        riskScore = Math.pow(effect, riskAlleleCount);
       }
     } else {
       riskLevel = 'neutral';
+      riskScore = 1.0;
     }
   } else {
     // Beta coefficient - represents units of trait change, not relative risk
