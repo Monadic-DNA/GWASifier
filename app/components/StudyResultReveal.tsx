@@ -225,9 +225,17 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     );
   }
 
-  // Only show the reveal button if we have user data and matching SNPs
-  if (!isUploaded || !hasMatchingSNPs(genotypeData, snps)) {
-    return null;
+  // Show appropriate message if no user data or no matching SNPs
+  if (!isUploaded) {
+    return null; // No data uploaded yet - don't show anything
+  }
+
+  if (!hasMatchingSNPs(genotypeData, snps)) {
+    return (
+      <div className="user-result no-match" title="Your genetic data file does not contain the SNP variants tested in this study.">
+        No data
+      </div>
+    );
   }
 
   return (
