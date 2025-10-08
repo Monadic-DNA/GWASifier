@@ -148,24 +148,27 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     if (riskDirection === 'neutral') {
       baseExplanation += "This genetic variant appears to have no significant effect on your risk.";
     } else if (isOddsRatio) {
-      // For odds ratios, we can calculate valid percentage risk changes
+      // For odds ratios, we can calculate relative risk changes (but baseline risk matters)
       if (riskDirection === 'increased') {
+        const percentChange = ((riskScore - 1) * 100).toFixed(0);
         if (riskScore < 1.5) {
-          baseExplanation += `This slightly increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. This is a small effect that may be offset by lifestyle and other genetic factors.`;
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. This is a small effect that may be offset by lifestyle and other genetic factors. `;
         } else if (riskScore < 2.0) {
-          baseExplanation += `This moderately increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. Combined with other factors, this could be meaningful for prevention strategies.`;
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. Combined with other factors, this could be meaningful for prevention strategies. `;
         } else {
-          baseExplanation += `This substantially increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. Consider discussing this with a healthcare provider, especially if you have other risk factors.`;
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. Consider discussing this with a healthcare provider, especially if you have other risk factors. `;
         }
+        baseExplanation += `Important: this percentage reflects relative odds, not absolute risk. The actual impact depends on the baseline population risk (not shown here), confidence intervals, and other genetic/environmental factors.`;
       } else if (riskDirection === 'decreased') {
-        baseExplanation += `This genetic variant appears to be protective, potentially reducing your risk by ${((1 - riskScore) * 100).toFixed(0)}%. This is a favorable genetic factor for this trait.`;
+        const percentChange = ((1 - riskScore) * 100).toFixed(0);
+        baseExplanation += `This variant shows a ${percentChange}% relative decrease in odds, which may be protective. Important: this reflects relative odds, not absolute risk reduction. The actual impact depends on baseline population risk and other factors.`;
       }
     } else {
       // For beta coefficients, we cannot convert to percentage risk - describe the effect directionally
       if (riskDirection === 'increased') {
-        baseExplanation += `This genetic variant is associated with higher values for this trait. The effect size indicates a per-allele increase, though this does not directly translate to a percentage risk change.`;
+        baseExplanation += `This genetic variant is associated with higher values for this trait. The effect size indicates a per-allele increase, though this does not directly translate to a percentage risk change. Clinical significance depends on the trait's measurement scale and other factors.`;
       } else if (riskDirection === 'decreased') {
-        baseExplanation += `This genetic variant is associated with lower values for this trait. The effect size indicates a per-allele decrease, though this does not directly translate to a percentage risk change.`;
+        baseExplanation += `This genetic variant is associated with lower values for this trait. The effect size indicates a per-allele decrease, though this does not directly translate to a percentage risk change. Clinical significance depends on the trait's measurement scale and other factors.`;
       }
     }
 
