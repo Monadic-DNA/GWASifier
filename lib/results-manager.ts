@@ -21,7 +21,8 @@ export type SavedSession = {
 };
 
 export class ResultsManager {
-  private static STORAGE_KEY = 'monadic_dna_explorer_results';
+  // SECURITY: localStorage removed to prevent cleartext genetic data persistence
+  // All results are now stored in memory only and cleared on session end
 
   static saveResultsToFile(session: SavedSession): void {
     const dataStr = JSON.stringify(session, null, 2);
@@ -42,64 +43,39 @@ export class ResultsManager {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json';
-      
+
       input.onchange = (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) {
           reject(new Error('No file selected'));
           return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
             const content = e.target?.result as string;
             const session = JSON.parse(content) as SavedSession;
-            
+
             // Validate the structure
             if (!session.results || !Array.isArray(session.results)) {
               throw new Error('Invalid file format');
             }
-            
+
             resolve(session);
           } catch (error) {
             reject(new Error('Failed to parse file: ' + (error as Error).message));
           }
         };
-        
+
         reader.onerror = () => {
           reject(new Error('Failed to read file'));
         };
-        
+
         reader.readAsText(file);
       };
-      
+
       input.click();
     });
-  }
-
-  static saveToLocalStorage(results: SavedResult[]): void {
-    const session: SavedSession = {
-      fileName: 'local_session',
-      createdDate: new Date().toISOString(),
-      totalVariants: 0, // Will be updated from context
-      results
-    };
-    
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(session));
-  }
-
-  static loadFromLocalStorage(): SavedSession | null {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (!stored) return null;
-      return JSON.parse(stored) as SavedSession;
-    } catch {
-      return null;
-    }
-  }
-
-  static clearLocalStorage(): void {
-    localStorage.removeItem(this.STORAGE_KEY);
   }
 }
