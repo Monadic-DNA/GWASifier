@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuerySingle, getDbType } from '@/lib/db';
+import { NilaiOpenAIClient } from '@nillion/nilai-ts';
 
 export async function POST(request: NextRequest) {
   try {
     const { currentResult, allResults, studyId } = await request.json();
 
-    // Check for API key - using OpenAI as temporary workaround until Nillion account is active
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Check for NilAI API key
+    const apiKey = process.env.NILLION_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in your environment variables.' },
+        { error: 'NilAI API key not configured. Please set NILLION_API_KEY in your environment variables.' },
         { status: 503 }
       );
     }
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
           SELECT
             disease_trait,
             study_accession,
-            pubmed_id,
+            pubmedid,
             first_author,
             date,
             journal,
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
             mapped_gene,
             upstream_gene_id,
             downstream_gene_id,
-            reported_gene_s
+            reported_genes
           FROM gwas_catalog
           WHERE ${idCondition}
         `;
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         const study = await executeQuerySingle<{
           disease_trait: string | null;
           study_accession: string | null;
-          pubmed_id: string | null;
+          pubmedid: string | null;
           first_author: string | null;
           date: string | null;
           journal: string | null;
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
           mapped_gene: string | null;
           upstream_gene_id: string | null;
           downstream_gene_id: string | null;
-          reported_gene_s: string | null;
+          reported_genes: string | null;
         }>(query, [studyId]);
 
         if (study) {
@@ -73,11 +74,11 @@ export async function POST(request: NextRequest) {
 - Study Accession: ${study.study_accession || 'N/A'}
 - Publication: ${study.first_author || 'N/A'} (${study.date || 'N/A'})
 - Journal: ${study.journal || 'N/A'}
-- PubMed ID: ${study.pubmed_id || 'N/A'}
+- PubMed ID: ${study.pubmedid || 'N/A'}
 - Study Description: ${study.study || 'N/A'}
 - Sample Sizes: Initial=${study.initial_sample_size || 'N/A'}, Replication=${study.replication_sample_size || 'N/A'}
 - P-value: ${study.p_value || 'N/A'}
-- Associated Genes: ${study.reported_gene_s || study.mapped_gene || 'N/A'}
+- Associated Genes: ${study.reported_genes || study.mapped_gene || 'N/A'}
 - Genomic Context: ${study.context || 'N/A'}
 ${study.link ? `- Study Link: ${study.link}` : ''}`;
         }
@@ -133,41 +134,31 @@ Please provide:
 
 Keep your response concise (400-600 words), educational, and reassuring where appropriate. Use clear, accessible language suitable for someone with no scientific background. Avoid jargon, and when technical terms are necessary, explain them simply.`;
 
-    // Make request to OpenAI (temporary workaround until Nillion account is active)
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a knowledgeable genetic counselor who explains GWAS results clearly and responsibly, always emphasizing appropriate disclaimers and limitations.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 800,
-        temperature: 0.7,
-      }),
+    // Initialize NilAI client
+    const client = new NilaiOpenAIClient({
+      baseURL: 'https://nilai-a779.nillion.network/v1/',
+      apiKey: apiKey,
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', errorText);
-      return NextResponse.json(
-        { error: `OpenAI API error: ${openaiResponse.status} - ${errorText}` },
-        { status: openaiResponse.status }
-      );
-    }
+    // Make request to NilAI
+    console.log('Sending request to NilAI API...');
+    const response = await client.chat.completions.create({
+      model: 'google/gemma-3-27b-it',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a knowledgeable genetic counselor who explains GWAS results clearly and responsibly, always emphasizing appropriate disclaimers and limitations.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 800,
+      temperature: 0.7,
+    });
 
-    const data = await openaiResponse.json();
-    const commentary = data.choices?.[0]?.message?.content;
+    const commentary = response.choices?.[0]?.message?.content;
 
     if (!commentary) {
       return NextResponse.json(
@@ -179,7 +170,7 @@ Keep your response concise (400-600 words), educational, and reassuring where ap
     return NextResponse.json({
       success: true,
       commentary,
-      model: 'gpt-4o-mini',
+      model: 'google/gemma-3-27b-it',
     });
 
   } catch (error) {
