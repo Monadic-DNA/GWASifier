@@ -7,7 +7,34 @@ export type UserStudyResult = {
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
   gwasId?: string;
+  allMatches?: Array<{
+    snp: string;
+    genotype: string;
+    score: number;
+    level: 'increased' | 'decreased' | 'neutral';
+  }>;
 };
+
+// Helper function to get complement base
+function getComplement(base: string): string {
+  const complements: Record<string, string> = {
+    'A': 'T',
+    'T': 'A',
+    'C': 'G',
+    'G': 'C'
+  };
+  return complements[base.toUpperCase()] || base;
+}
+
+// Helper function to check if genotype is valid (not a no-call)
+function isValidGenotype(genotype: string): boolean {
+  // Filter out no-calls (--, -, 00, etc.)
+  return genotype !== '--' &&
+         genotype !== '-' &&
+         genotype !== '00' &&
+         genotype.length > 0 &&
+         !/^-+$/.test(genotype);
+}
 
 export function calculateRiskScore(userGenotype: string, riskAllele: string, effectSize: string): {
   score: number;
@@ -19,12 +46,21 @@ export function calculateRiskScore(userGenotype: string, riskAllele: string, eff
     return { score: 1, level: 'neutral' };
   }
 
+  // Check if genotype is valid
+  if (!isValidGenotype(userGenotype)) {
+    return { score: 1, level: 'neutral' };
+  }
+
   // Extract the risk allele (e.g., "rs123-A" -> "A")
   const riskAlleleBase = riskAllele.split('-').pop() || '';
+  const riskComplement = getComplement(riskAlleleBase);
   const userAlleles = userGenotype.split('');
 
   // Count how many risk alleles the user has (0, 1, or 2)
-  const riskAlleleCount = userAlleles.filter(allele => allele === riskAlleleBase).length;
+  // Check both the allele and its complement to handle strand orientation
+  const riskAlleleCount = userAlleles.filter(allele =>
+    allele === riskAlleleBase || allele === riskComplement
+  ).length;
 
   let riskScore: number;
   let riskLevel: 'increased' | 'decreased' | 'neutral';
@@ -72,25 +108,52 @@ export function analyzeStudyClientSide(
   // Extract SNP IDs from the study
   const snpList = studySnps.split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
 
-  // Find matching SNPs
+  // Find ALL matching SNPs (not just the first one)
+  const allMatches: Array<{
+    snp: string;
+    genotype: string;
+    score: number;
+    level: 'increased' | 'decreased' | 'neutral';
+  }> = [];
+
   for (const snp of snpList) {
     if (genotypeMap.has(snp)) {
       const userGenotype = genotypeMap.get(snp)!;
+
+      // Skip invalid genotypes (no-calls, etc.)
+      if (!isValidGenotype(userGenotype)) {
+        continue;
+      }
+
       const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize);
 
-      return {
-        hasMatch: true,
-        userGenotype,
-        riskAllele,
-        effectSize,
-        riskScore: score,
-        riskLevel: level,
-        matchedSnp: snp,
-        gwasId: gwasId || undefined,
-      };
+      allMatches.push({
+        snp,
+        genotype: userGenotype,
+        score,
+        level
+      });
     }
   }
 
   // No matches found
-  return { hasMatch: false };
+  if (allMatches.length === 0) {
+    return { hasMatch: false };
+  }
+
+  // Return the first match as the primary result for backward compatibility
+  // but include all matches for comprehensive analysis
+  const primaryMatch = allMatches[0];
+
+  return {
+    hasMatch: true,
+    userGenotype: primaryMatch.genotype,
+    riskAllele,
+    effectSize,
+    riskScore: primaryMatch.score,
+    riskLevel: primaryMatch.level,
+    matchedSnp: primaryMatch.snp,
+    gwasId: gwasId || undefined,
+    allMatches: allMatches,
+  };
 }
