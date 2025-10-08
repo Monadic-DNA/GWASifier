@@ -150,7 +150,6 @@ function MainContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
-  const [showInitialDisclaimer, setShowInitialDisclaimer] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [loadTime, setLoadTime] = useState<number | null>(null);
 
@@ -368,11 +367,6 @@ function MainContent() {
       <TermsAcceptanceModal
         isOpen={showTermsModal}
         onAccept={() => setShowTermsModal(false)}
-      />
-      <DisclaimerModal
-        isOpen={showInitialDisclaimer}
-        onClose={() => setShowInitialDisclaimer(false)}
-        type="initial"
       />
       <MenuBar />
       <main className="page">
