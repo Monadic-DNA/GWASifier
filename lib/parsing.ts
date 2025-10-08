@@ -3,20 +3,37 @@ export function parseSampleSize(text?: string | null): number | null {
     return null;
   }
 
+  // Extract all numbers from the text
   const matches = text.match(/\d[\d,]*/g);
   if (!matches) {
     return null;
   }
 
-  let total = 0;
-  for (const value of matches) {
-    const numeric = Number(value.replace(/,/g, ""));
-    if (!Number.isNaN(numeric)) {
-      total += numeric;
-    }
+  const numbers = matches.map(v => Number(v.replace(/,/g, ""))).filter(n => !Number.isNaN(n) && n > 0);
+
+  if (numbers.length === 0) {
+    return null;
   }
 
-  return total > 0 ? total : null;
+  // Heuristic to avoid double-counting:
+  // If we have multiple similar numbers (within 20% of each other), they likely represent
+  // the same cohort described in different ways. Take the maximum instead of summing.
+  // Otherwise, sum them (they're likely distinct sub-cohorts).
+
+  if (numbers.length === 1) {
+    return numbers[0];
+  }
+
+  const maxNum = Math.max(...numbers);
+  const allSimilar = numbers.every(n => Math.abs(n - maxNum) / maxNum < 0.2);
+
+  if (allSimilar) {
+    // Likely duplicate descriptions of the same cohort - use the largest
+    return maxNum;
+  }
+
+  // Different cohorts - sum them
+  return numbers.reduce((sum, n) => sum + n, 0);
 }
 
 export function parsePValue(raw?: string | null): number | null {
@@ -56,17 +73,48 @@ export function parseLogPValue(raw?: string | null): number | null {
   return Number.isNaN(value) ? null : value;
 }
 
-export function computeQualityFlags(sampleSize: number | null, pValue: number | null, logPValue: number | null): string[] {
-  const flags: string[] = [];
+export type QualityFlag = {
+  message: string;
+  severity: 'major' | 'minor';
+};
+
+export function computeQualityFlags(sampleSize: number | null, pValue: number | null, logPValue: number | null): QualityFlag[] {
+  const flags: QualityFlag[] = [];
+
+  // Major flags - seriously questionable
   if (sampleSize !== null && sampleSize < 500) {
-    flags.push("Small discovery cohort (<500 participants)");
+    flags.push({
+      message: "Very small discovery cohort (<500 participants)",
+      severity: 'major'
+    });
   }
-  if (pValue !== null && pValue > 5e-8) {
-    flags.push("Association above genome-wide significance (p > 5e-8)");
+  if (pValue !== null && pValue > 5e-7) {
+    flags.push({
+      message: "Association well above genome-wide significance (p > 5e-7)",
+      severity: 'major'
+    });
+  }
+
+  // Minor flags - marginal issues
+  if (sampleSize !== null && sampleSize >= 500 && sampleSize < 1000) {
+    flags.push({
+      message: "Small discovery cohort (500-1000 participants)",
+      severity: 'minor'
+    });
+  }
+  if (pValue !== null && pValue > 5e-8 && pValue <= 5e-7) {
+    flags.push({
+      message: "Association slightly above genome-wide significance (5e-8 < p < 5e-7)",
+      severity: 'minor'
+    });
   }
   if (logPValue !== null && logPValue < 6) {
-    flags.push("Weak signal (−log10 p < 6)");
+    flags.push({
+      message: "Moderate signal strength (−log10 p < 6)",
+      severity: 'minor'
+    });
   }
+
   return flags;
 }
 

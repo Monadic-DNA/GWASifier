@@ -8,6 +8,7 @@ import {
   parseLogPValue,
   parsePValue,
   parseSampleSize,
+  QualityFlag,
 } from "@/lib/parsing";
 
 type ConfidenceBand = "high" | "medium" | "low";
@@ -41,7 +42,7 @@ type Study = RawStudy & {
   pValueNumeric: number | null;
   pValueLabel: string;
   logPValue: number | null;
-  qualityFlags: string[];
+  qualityFlags: QualityFlag[];
   isLowQuality: boolean;
   confidenceBand: ConfidenceBand;
   publicationDate: number | null;
@@ -192,9 +193,12 @@ function determineConfidenceBand(
   sampleSize: number | null,
   pValue: number | null,
   logPValue: number | null,
-  isLowQuality: boolean,
+  qualityFlags: Array<{ severity: string }>,
 ): ConfidenceBand {
-  if (isLowQuality) {
+  // Only downgrade to low if there are MAJOR quality issues
+  const hasMajorFlags = qualityFlags.some(flag => flag.severity === 'major');
+
+  if (hasMajorFlags) {
     return "low";
   }
 
@@ -217,6 +221,8 @@ function determineConfidenceBand(
     return "medium";
   }
 
+  // Minor flags don't prevent medium classification
+  // but studies with minor flags and not meeting medium criteria are low
   return "low";
 }
 
@@ -300,8 +306,9 @@ export async function GET(request: NextRequest) {
       const pValueNumeric = parsePValue(row.p_value);
       const logPValue = parseLogPValue(row.pvalue_mlog) ?? (pValueNumeric ? -Math.log10(pValueNumeric) : null);
       const qualityFlags = computeQualityFlags(sampleSize, pValueNumeric, logPValue);
-      const isLowQuality = qualityFlags.length > 0;
-      const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, isLowQuality);
+      const hasMajorFlags = qualityFlags.some(f => f.severity === 'major');
+      const isLowQuality = hasMajorFlags; // Only major flags indicate truly low quality
+      const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, qualityFlags);
       const publicationDate = parseStudyDate(row.date);
       return {
         ...row,

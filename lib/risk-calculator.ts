@@ -3,6 +3,8 @@ export type UserStudyResult = {
   userGenotype?: string;
   riskAllele?: string;
   effectSize?: string;
+  effectType?: 'OR' | 'beta';
+  confidenceInterval?: string;
   riskScore?: number;
   riskLevel?: 'increased' | 'decreased' | 'neutral';
   matchedSnp?: string;
@@ -36,7 +38,12 @@ function isValidGenotype(genotype: string): boolean {
          !/^-+$/.test(genotype);
 }
 
-export function calculateRiskScore(userGenotype: string, riskAllele: string, effectSize: string): {
+export function calculateRiskScore(
+  userGenotype: string,
+  riskAllele: string,
+  effectSize: string,
+  effectType: 'OR' | 'beta' = 'OR'
+): {
   score: number;
   level: 'increased' | 'decreased' | 'neutral';
 } {
@@ -53,27 +60,37 @@ export function calculateRiskScore(userGenotype: string, riskAllele: string, eff
 
   // Extract the risk allele (e.g., "rs123-A" -> "A")
   const riskAlleleBase = riskAllele.split('-').pop() || '';
-  const riskComplement = getComplement(riskAlleleBase);
   const userAlleles = userGenotype.split('');
 
   // Count how many risk alleles the user has (0, 1, or 2)
-  // Check both the allele and its complement to handle strand orientation
-  const riskAlleleCount = userAlleles.filter(allele =>
-    allele === riskAlleleBase || allele === riskComplement
-  ).length;
+  // SECURITY FIX: Remove complement matching per audit recommendation
+  // GWAS Catalog and 23andMe both use forward strand, complement matching causes false positives
+  const riskAlleleCount = userAlleles.filter(allele => allele === riskAlleleBase).length;
 
   let riskScore: number;
   let riskLevel: 'increased' | 'decreased' | 'neutral';
 
-  if (effectSize.includes('OR')) {
-    // Odds ratio: OR > 1 increases risk, OR < 1 decreases risk
+  if (effectType === 'OR') {
+    // Odds ratio: OR > 1 increases risk, OR < 1 decreases risk (protective)
     riskScore = Math.pow(effect, riskAlleleCount);
-    if (riskAlleleCount === 0) {
-      riskLevel = 'neutral';
+
+    // For protective alleles (OR < 1), non-carriers have comparatively higher risk
+    if (effect < 1) {
+      if (riskAlleleCount === 0) {
+        // No protective alleles = higher risk relative to carriers
+        riskLevel = 'increased';
+        riskScore = 1 / effect; // Reciprocal to show relative risk
+      } else {
+        // Has protective alleles = decreased risk
+        riskLevel = 'decreased';
+      }
     } else if (effect > 1) {
-      riskLevel = 'increased';
-    } else if (effect < 1) {
-      riskLevel = 'decreased';
+      // Risk-increasing alleles
+      if (riskAlleleCount === 0) {
+        riskLevel = 'neutral';
+      } else {
+        riskLevel = 'increased';
+      }
     } else {
       riskLevel = 'neutral';
     }
@@ -99,7 +116,9 @@ export function analyzeStudyClientSide(
   studySnps: string,
   riskAllele: string | null,
   effectSize: string | null,
-  gwasId: string | null
+  gwasId: string | null,
+  effectType: 'OR' | 'beta' = 'OR',
+  confidenceInterval?: string | null
 ): UserStudyResult {
   if (!riskAllele || !effectSize || !studySnps) {
     return { hasMatch: false };
@@ -125,7 +144,7 @@ export function analyzeStudyClientSide(
         continue;
       }
 
-      const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize);
+      const { score, level } = calculateRiskScore(userGenotype, riskAllele, effectSize, effectType);
 
       allMatches.push({
         snp,
@@ -150,6 +169,8 @@ export function analyzeStudyClientSide(
     userGenotype: primaryMatch.genotype,
     riskAllele,
     effectSize,
+    effectType,
+    confidenceInterval: confidenceInterval || undefined,
     riskScore: primaryMatch.score,
     riskLevel: primaryMatch.level,
     matchedSnp: primaryMatch.snp,
