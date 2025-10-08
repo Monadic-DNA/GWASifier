@@ -29,12 +29,22 @@ export function calculateRiskScore(userGenotype: string, riskAllele: string, eff
   let riskScore: number;
   let riskLevel: 'increased' | 'decreased' | 'neutral';
 
-  if (effectSize.includes('OR') || effect > 1) {
-    // Odds ratio - higher values mean increased risk
+  if (effectSize.includes('OR')) {
+    // Odds ratio: OR > 1 increases risk, OR < 1 decreases risk
     riskScore = Math.pow(effect, riskAlleleCount);
-    riskLevel = riskAlleleCount > 0 ? 'increased' : 'neutral';
+    if (riskAlleleCount === 0) {
+      riskLevel = 'neutral';
+    } else if (effect > 1) {
+      riskLevel = 'increased';
+    } else if (effect < 1) {
+      riskLevel = 'decreased';
+    } else {
+      riskLevel = 'neutral';
+    }
   } else {
-    // Beta coefficient - could be positive or negative
+    // Beta coefficient - represents units of trait change, not relative risk
+    // Return the raw beta-based score for display purposes only
+    // This should NOT be interpreted as a risk multiplier
     riskScore = 1 + (effect * riskAlleleCount);
     if (riskAlleleCount === 0) {
       riskLevel = 'neutral';

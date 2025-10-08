@@ -125,16 +125,18 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
 
   const generateTooltip = (result: UserStudyResult) => {
     if (!result.hasMatch) return "No genetic data available for this study's variants.";
-    
-    const riskMultiplier = result.riskScore!;
+
+    const riskScore = result.riskScore!;
     const riskDirection = result.riskLevel!;
     const userGenotype = result.userGenotype!;
     const riskAllele = result.riskAllele!.split('-').pop() || '';
+    const effectSize = result.effectSize || '';
     const userAlleles = userGenotype.split('');
     const riskAlleleCount = userAlleles.filter(allele => allele === riskAllele).length;
-    
+    const isOddsRatio = effectSize.includes('OR');
+
     let baseExplanation = `Your genotype is ${userGenotype}. `;
-    
+
     if (riskAlleleCount === 0) {
       baseExplanation += `You don't carry the risk variant (${riskAllele}), which means this genetic factor doesn't increase your risk for this trait. `;
     } else if (riskAlleleCount === 1) {
@@ -145,20 +147,30 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
 
     if (riskDirection === 'neutral') {
       baseExplanation += "This genetic variant appears to have no significant effect on your risk.";
-    } else if (riskDirection === 'increased') {
-      if (riskMultiplier < 1.5) {
-        baseExplanation += `This slightly increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. This is a small effect that may be offset by lifestyle and other genetic factors.`;
-      } else if (riskMultiplier < 2.0) {
-        baseExplanation += `This moderately increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Combined with other factors, this could be meaningful for prevention strategies.`;
-      } else {
-        baseExplanation += `This substantially increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Consider discussing this with a healthcare provider, especially if you have other risk factors.`;
+    } else if (isOddsRatio) {
+      // For odds ratios, we can calculate valid percentage risk changes
+      if (riskDirection === 'increased') {
+        if (riskScore < 1.5) {
+          baseExplanation += `This slightly increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. This is a small effect that may be offset by lifestyle and other genetic factors.`;
+        } else if (riskScore < 2.0) {
+          baseExplanation += `This moderately increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. Combined with other factors, this could be meaningful for prevention strategies.`;
+        } else {
+          baseExplanation += `This substantially increases your risk by ${((riskScore - 1) * 100).toFixed(0)}%. Consider discussing this with a healthcare provider, especially if you have other risk factors.`;
+        }
+      } else if (riskDirection === 'decreased') {
+        baseExplanation += `This genetic variant appears to be protective, potentially reducing your risk by ${((1 - riskScore) * 100).toFixed(0)}%. This is a favorable genetic factor for this trait.`;
       }
-    } else if (riskDirection === 'decreased') {
-      baseExplanation += `This genetic variant appears to be protective, potentially reducing your risk by ${((1 - riskMultiplier) * 100).toFixed(0)}%. This is a favorable genetic factor for this trait.`;
+    } else {
+      // For beta coefficients, we cannot convert to percentage risk - describe the effect directionally
+      if (riskDirection === 'increased') {
+        baseExplanation += `This genetic variant is associated with higher values for this trait. The effect size indicates a per-allele increase, though this does not directly translate to a percentage risk change.`;
+      } else if (riskDirection === 'decreased') {
+        baseExplanation += `This genetic variant is associated with lower values for this trait. The effect size indicates a per-allele decrease, though this does not directly translate to a percentage risk change.`;
+      }
     }
 
     baseExplanation += ` Remember that genetics is just one piece of the puzzle - lifestyle, environment, and other genetic variants all play important roles.`;
-    
+
     return baseExplanation;
   };
 
