@@ -65,7 +65,10 @@ If you upload data belonging to someone else, you confirm that you have legal au
 Uploaded data is processed **locally** in your browser or **transiently in encrypted memory** during an active session.
 We do **not** permanently store, back up, or retain user data after the session ends.
 
-If you choose to save individual study results, those analyzed results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are stored locally in your browser's local storage and persist until manually deleted using the "Clear" button.
+Analysis results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are kept **in memory only** during your session and are automatically deleted when you close the browser or navigate away from the application. If you wish to preserve your results, you may manually export them as a JSON file to your local device using the export feature. We recommend that you:
+- Store exported files securely on encrypted storage
+- Delete exported files when no longer needed
+- Never upload exported files to cloud services or unsecured locations
 
 ### 7.2 Ownership
 You retain full ownership of your uploaded data.  
