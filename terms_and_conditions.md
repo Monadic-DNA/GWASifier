@@ -1,6 +1,6 @@
 # Monadic DNA Explorer — Terms and Conditions
-**Effective Date:** October 7, 2025 
-**Version:** 1
+**Effective Date:** October 9, 2025 
+**Version:** 1.1
 
 ---
 
@@ -75,8 +75,15 @@ You retain full ownership of your uploaded data.
 By using the Service, you grant Recherché Inc. a **temporary, limited license** to process that data solely for the purpose of providing the Service.
 
 ### 7.3 No Account System
-We do not currently support or require user accounts or contact information.  
-Because we do not collect user identifiers, we **cannot send notifications** (including policy updates or incident alerts).
+We do not currently support or require user accounts or contact information.
+Because we do not collect user identifiers, we **cannot send individualized notifications** (including policy updates or incident alerts).
+
+However, in the event of a security incident, policy change, or other material update, we will make **reasonable efforts** to notify users through:
+- **Prominent in-app banner** displayed on the application homepage
+- **Public announcement** on our official social media channels (Twitter/X, LinkedIn)
+- **Notice posted** in our public GitHub repository
+
+You are encouraged to periodically check the application and our official channels for important announcements.
 
 ---
 

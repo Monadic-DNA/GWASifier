@@ -1,6 +1,6 @@
 # Monadic DNA Explorer — Privacy Policy
-**Effective Date:** October 7, 2025 
-**Version:** 1
+**Effective Date:** October 9, 2025 
+**Version:** 1.1
 
 ---
 
@@ -107,23 +107,30 @@ You may disable cookies in your browser settings; core functionality will remain
 
 ## 7. Security
 
+We implement industry-standard security practices, including:
 - All communications use **TLS (HTTPS)**.
 - Computation is done **in-memory**, not in databases.
-- Infrastructure is regularly audited for security.
+- Regular code reviews and dependency scanning for vulnerabilities.
+- Minimal data collection to reduce exposure.
 
-However, no system is perfectly secure.  
+However, no system is perfectly secure.
 We are **not liable** for third-party incidents (e.g., Nillion, Google Analytics, or hosting provider breaches).
 
 ---
 
-## 8. No Contact or Notification Capability
+## 8. Breach Notification and User Communication
 
-Because we do not collect identifiers, we cannot:
-- Send breach notices,
-- Notify users of updates, or
-- Verify user identities.
+Because we do not collect user contact information or identifiers, we cannot send individualized breach notices, policy updates, or identity verification requests.
 
-You are encouraged to review this Privacy Policy periodically.
+However, in the event of a security incident that may affect user data, we commit to making **reasonable efforts** to notify users through:
+- **Prominent in-app banner** displayed on the application homepage
+- **Public announcement** on our official social media channels (Twitter/X, LinkedIn)
+- **Notice posted** in our public GitHub repository
+
+We encourage you to:
+- Review this Privacy Policy periodically for updates
+- Follow our official social media accounts for important announcements
+- Check the application homepage for any security notices
 
 ---
 
