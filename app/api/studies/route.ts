@@ -265,6 +265,11 @@ export async function GET(request: NextRequest) {
 
   // Use appropriate ID selection based on database type
   const dbType = getDbType();
+  // NOTE: hashtext() is a 32-bit non-cryptographic hash with potential collision risk.
+  // For production with high study volumes, consider migrating to a stable UUID column
+  // computed during data ingestion to eliminate collision probability.
+  // Current risk is low given GWAS catalog size (~hundreds of thousands of studies) and
+  // the composite key includes multiple discriminating fields (accession, SNPs, p-value, OR).
   const idSelection = dbType === 'postgres'
     ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\') || COALESCE(p_value, \'\') || COALESCE(or_or_beta::text, \'\')) AS id'
     : 'rowid AS id';
