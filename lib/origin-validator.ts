@@ -14,10 +14,19 @@ export function validateOrigin(request: NextRequest): NextResponse | null {
   const isLocalhost = origin?.includes('localhost') ||
                       origin?.includes('127.0.0.1') ||
                       referer?.includes('localhost') ||
-                      referer?.includes('127.0.0.1');
+                      referer?.includes('127.0.0.1') ||
+                      host?.includes('localhost') ||
+                      host?.includes('127.0.0.1');
 
   if (isLocalhost) {
     // Allow all localhost requests in development
+    return null;
+  }
+
+  // If no origin/referer header, it's likely a same-origin request (which is safe)
+  // Browsers don't always send these headers for same-origin requests
+  if (!origin && !referer) {
+    // Allow requests without origin/referer from the same host
     return null;
   }
 
