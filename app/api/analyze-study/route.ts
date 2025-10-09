@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeQuerySingle, getDbType } from "@/lib/db";
+import { validateOrigin } from "@/lib/origin-validator";
 
 // This endpoint only returns study metadata - NO user genetic data is processed here
 export async function POST(request: NextRequest) {
+  // Validate origin
+  const originError = validateOrigin(request);
+  if (originError) return originError;
+
   try {
     const { studyId } = await request.json();
 

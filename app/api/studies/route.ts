@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { executeQuery, executeQuerySingle, getDbType } from "@/lib/db";
+import { validateOrigin } from "@/lib/origin-validator";
 import {
   computeQualityFlags,
   formatNumber,
@@ -227,6 +228,9 @@ function determineConfidenceBand(
 }
 
 export async function GET(request: NextRequest) {
+  // Validate origin
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const searchParams = request.nextUrl.searchParams;
   const search = searchParams.get("search")?.trim();

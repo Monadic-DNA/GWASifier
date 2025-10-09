@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuerySingle, getDbType } from '@/lib/db';
+import { validateOrigin } from '@/lib/origin-validator';
 
 export async function GET(request: NextRequest) {
+  // Validate origin
+  const originError = validateOrigin(request);
+  if (originError) return originError;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const studyId = searchParams.get('studyId');

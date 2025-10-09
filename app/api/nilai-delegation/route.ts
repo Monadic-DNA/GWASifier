@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DelegationTokenServer, NilAuthInstance } from '@nillion/nilai-ts';
+import { validateOrigin } from '@/lib/origin-validator';
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -51,30 +52,9 @@ function isValidDelegationRequest(delegationRequest: any): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Origin validation - allow localhost freely, otherwise require same-domain
-    const origin = request.headers.get('origin');
-    const referer = request.headers.get('referer');
-    const host = request.headers.get('host');
-
-    // Check if request is from localhost
-    const isLocalhost = origin?.includes('localhost') ||
-                        origin?.includes('127.0.0.1') ||
-                        referer?.includes('localhost') ||
-                        referer?.includes('127.0.0.1');
-
-    if (!isLocalhost) {
-      // In production, only allow requests from the same domain
-      const requestOrigin = origin || (referer ? new URL(referer).origin : null);
-      const expectedOrigin = host ? `https://${host}` : null;
-
-      if (!requestOrigin || !expectedOrigin || !requestOrigin.startsWith(expectedOrigin.replace(/:\d+$/, ''))) {
-        console.warn(`Unauthorized origin/referer: ${requestOrigin || 'none'}, expected: ${expectedOrigin}`);
-        return NextResponse.json(
-          { error: 'Unauthorized origin' },
-          { status: 403 }
-        );
-      }
-    }
+    // Validate origin
+    const originError = validateOrigin(request);
+    if (originError) return originError;
 
     // Rate limiting check
     const rateLimitKey = getRateLimitKey(request);

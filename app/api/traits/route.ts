@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
-
+import { NextRequest, NextResponse } from "next/server";
 import { executeQuery } from "@/lib/db";
+import { validateOrigin } from "@/lib/origin-validator";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Validate origin
+  const originError = validateOrigin(request);
+  if (originError) return originError;
+
   try {
     const rows = await executeQuery<{ trait: string | null }>(
       `SELECT DISTINCT COALESCE(NULLIF(TRIM(mapped_trait), ''), NULLIF(TRIM(disease_trait), '')) AS trait
