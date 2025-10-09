@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { trackModalOpen, trackModalClose, trackDisclaimerView } from "@/lib/analytics";
 
 type DisclaimerModalProps = {
   isOpen: boolean;
@@ -19,10 +20,13 @@ export default function DisclaimerModal({ isOpen, onClose, type, onAccept }: Dis
   }, []);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      trackModalOpen(type === 'initial' ? 'disclaimer_initial' : 'disclaimer_result');
+      trackDisclaimerView();
+    } else {
       setHasScrolledToBottom(false);
     }
-  }, [isOpen]);
+  }, [isOpen, type]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -94,7 +98,10 @@ export default function DisclaimerModal({ isOpen, onClose, type, onAccept }: Dis
       <div className="modal-actions">
         <button
           className="disclaimer-button primary"
-          onClick={onClose}
+          onClick={() => {
+            trackModalClose('disclaimer_initial', 'accept');
+            onClose();
+          }}
           disabled={!hasScrolledToBottom}
         >
           {hasScrolledToBottom ? 'I Understand - Continue' : 'Please scroll to continue'}
@@ -138,13 +145,19 @@ export default function DisclaimerModal({ isOpen, onClose, type, onAccept }: Dis
       <div className="modal-actions">
         <button
           className="disclaimer-button secondary"
-          onClick={onClose}
+          onClick={() => {
+            trackModalClose('disclaimer_result', 'decline');
+            onClose();
+          }}
         >
           Cancel
         </button>
         <button
           className="disclaimer-button primary"
-          onClick={onAccept || onClose}
+          onClick={() => {
+            trackModalClose('disclaimer_result', 'accept');
+            (onAccept || onClose)();
+          }}
           disabled={!hasScrolledToBottom}
         >
           {hasScrolledToBottom ? 'I Understand - Show Results' : 'Please scroll to continue'}

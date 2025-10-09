@@ -3,6 +3,12 @@
 import { useState, useRef, createContext, useContext } from "react";
 import { GenotypeData, detectAndParseGenotypeFile, validateFileSize, validateFileFormat } from "@/lib/genotype-parser";
 import { calculateFileHash } from "@/lib/file-hash";
+import {
+  trackFileUploadStart,
+  trackFileUploadSuccess,
+  trackFileUploadError,
+  trackFileCleared,
+} from "@/lib/analytics";
 
 type GenotypeContextType = {
   genotypeData: Map<string, string> | null;
@@ -27,8 +33,14 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
   const [originalFileName, setOriginalFileName] = useState<string | null>(null);
 
   const uploadGenotype = async (file: File) => {
+    const startTime = performance.now();
+    const fileExtension = file.name.split('.').pop() || '';
+
     setIsLoading(true);
     setError(null);
+
+    // Track upload start
+    trackFileUploadStart(file.size, fileExtension);
 
     try {
       // Validate file size (50MB limit)
@@ -58,6 +70,11 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
         genotypeMap.set(variant.rsid, variant.genotype);
       });
 
+      const parseDuration = performance.now() - startTime;
+
+      // Track successful upload
+      trackFileUploadSuccess(file.size, genotypeMap.size, parseDuration);
+
       setGenotypeData(genotypeMap);
       setFileHash(hash);
       setOriginalFileName(file.name);
@@ -67,7 +84,11 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
         onDataLoaded();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMessage);
+
+      // Track upload error
+      trackFileUploadError(errorMessage, file.size);
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +99,9 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     setFileHash(null);
     setOriginalFileName(null);
+
+    // Track file cleared
+    trackFileCleared();
   };
 
   return (

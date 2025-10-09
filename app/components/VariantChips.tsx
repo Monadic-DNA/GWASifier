@@ -2,6 +2,7 @@
 
 import { useGenotype } from "./UserDataUpload";
 import { parseVariantIds, getMatchingSNPs } from "@/lib/snp-utils";
+import { trackVariantClick } from "@/lib/analytics";
 
 type VariantChipsProps = {
   snps: string | null;
@@ -29,6 +30,7 @@ export default function VariantChips({ snps, riskAllele }: VariantChipsProps) {
               target="_blank"
               rel="noreferrer"
               title={matchingSNPs.has(variantId) ? 'You have data for this variant' : undefined}
+              onClick={() => trackVariantClick(variantId)}
             >
               {variantId}
               {matchingSNPs.has(variantId) && <span className="user-data-indicator">●</span>}

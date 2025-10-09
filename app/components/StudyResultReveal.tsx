@@ -8,6 +8,7 @@ import { analyzeStudyClientSide, UserStudyResult } from "@/lib/risk-calculator";
 import DisclaimerModal from "./DisclaimerModal";
 import LLMCommentaryModal from "./LLMCommentaryModal";
 import { SavedResult } from "@/lib/results-manager";
+import { trackStudyResultReveal } from "@/lib/analytics";
 
 type StudyResultRevealProps = {
   studyId: number;
@@ -95,6 +96,13 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
 
       setResult(analysisResult);
       setIsRevealed(true);
+
+      // Track result reveal
+      trackStudyResultReveal(
+        analysisResult.hasMatch,
+        analysisResult.hasMatch ? 1 : 0,
+        data.study.confidenceBand || 'unknown'
+      );
 
       // Save the result if it has a match
       if (analysisResult.hasMatch) {

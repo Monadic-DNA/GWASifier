@@ -10,6 +10,15 @@ import Footer from "./components/Footer";
 import DisclaimerModal from "./components/DisclaimerModal";
 import TermsAcceptanceModal from "./components/TermsAcceptanceModal";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
+import {
+  trackSearch,
+  trackFilterChange,
+  trackFilterReset,
+  trackSort,
+  trackStudyClick,
+  trackFeatureToggle,
+  trackAPITiming,
+} from "@/lib/analytics";
 
 type SortOption = "relevance" | "power" | "recent" | "alphabetical";
 type SortDirection = "asc" | "desc";
@@ -176,6 +185,12 @@ function MainContent() {
       if (key !== "confidenceBand") {
         next.confidenceBand = null;
       }
+
+      // Track filter changes (with debouncing for search handled separately)
+      if (key !== 'search' && value !== null) {
+        trackFilterChange(key, value);
+      }
+
       return next;
     });
   }, []);
@@ -221,14 +236,20 @@ function MainContent() {
 
     fetch(`/api/studies?${query}`, { signal: controller.signal })
       .then(async (response) => {
+        const apiDuration = performance.now() - startTime;
+
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}));
+          trackAPITiming('/api/studies', apiDuration, false);
           throw new Error(payload.error ?? "Failed to load studies");
         }
         const payload = (await response.json()) as StudiesResponse;
         if (payload.error) {
+          trackAPITiming('/api/studies', apiDuration, false);
           throw new Error(payload.error);
         }
+
+        trackAPITiming('/api/studies', apiDuration, true);
 
         let filteredData = payload.data ?? [];
 
@@ -254,7 +275,13 @@ function MainContent() {
         }
 
         const endTime = performance.now();
-        setLoadTime(endTime - startTime);
+        const totalLoadTime = endTime - startTime;
+        setLoadTime(totalLoadTime);
+
+        // Track search if there's a search query
+        if (debouncedSearch.trim()) {
+          trackSearch(debouncedSearch, filteredData.length, totalLoadTime);
+        }
 
         setStudies(filteredData);
         setMeta({
@@ -296,18 +323,26 @@ function MainContent() {
   const resetFilters = () => {
     setFilters(defaultFilters);
     setDebouncedSearch(defaultFilters.search);
+    trackFilterReset();
   };
 
 
   const handleColumnSort = (sortKey: SortOption) => {
+    const newDirection = filters.sort === sortKey
+      ? (filters.sortDirection === "asc" ? "desc" : "asc")
+      : "desc";
+
     if (filters.sort === sortKey) {
       // Same column clicked, toggle direction
-      updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc");
+      updateFilter("sortDirection", newDirection);
     } else {
       // New column clicked, set to desc (most common use case)
       updateFilter("sort", sortKey);
-      updateFilter("sortDirection", "desc");
+      updateFilter("sortDirection", newDirection);
     }
+
+    // Track sort change
+    trackSort(sortKey, newDirection);
   };
 
   const handleStudyColumnSort = () => {
@@ -316,7 +351,9 @@ function MainContent() {
       handleColumnSort("recent");
     } else if (filters.sort === "recent") {
       // Toggle direction for recent
-      updateFilter("sortDirection", filters.sortDirection === "asc" ? "desc" : "asc");
+      const newDirection = filters.sortDirection === "asc" ? "desc" : "asc";
+      updateFilter("sortDirection", newDirection);
+      trackSort("recent", newDirection);
     } else {
       // Start with alphabetical
       handleColumnSort("alphabetical");
@@ -631,7 +668,12 @@ function MainContent() {
                     <td>
                       <div className="study-title">
                         {studyLink ? (
-                          <a href={studyLink} target="_blank" rel="noreferrer">
+                          <a
+                            href={studyLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => trackStudyClick(study.study_accession, trait, study.confidenceBand)}
+                          >
                             {study.study ?? "Untitled study"}
                           </a>
                         ) : (
