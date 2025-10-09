@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { trackModalOpen, trackTermsAcceptance } from "@/lib/analytics";
 
 type TermsAcceptanceModalProps = {
   isOpen: boolean;
@@ -10,12 +11,19 @@ type TermsAcceptanceModalProps = {
 export default function TermsAcceptanceModal({ isOpen, onAccept }: TermsAcceptanceModalProps) {
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      trackModalOpen('terms_acceptance');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleAccept = () => {
     if (dontShowAgain) {
       localStorage.setItem('terms_accepted', 'true');
     }
+    trackTermsAcceptance();
     onAccept();
   };
 
