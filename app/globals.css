@@ -2281,3 +2281,89 @@ tbody tr:hover {
 .commentary-body p:last-child {
   margin-bottom: 0;
 }
+
+/* Table Horizontal Scroll Container with Shadow Hints */
+.table-scroll-container {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+  /* Gradient shadows that appear when content overflows */
+  background:
+    /* Left shadow */
+    linear-gradient(to right, var(--primary-bg) 0%, transparent 40px) 0 0,
+    /* Right shadow */
+    linear-gradient(to left, var(--primary-bg) 0%, transparent 40px) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%;
+  background-attachment: local, local;
+  
+  /* Show shadows only when scrollable */
+  background-image:
+    linear-gradient(to right, var(--primary-bg) 0%, transparent 40px),
+    linear-gradient(to left, var(--primary-bg) 0%, transparent 40px),
+    /* Scroll indicators (actual shadows) */
+    linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, transparent 20px),
+    linear-gradient(to left, rgba(0, 0, 0, 0.15) 0%, transparent 20px);
+  background-position: 0 0, 100% 0, 0 0, 100% 0;
+  background-repeat: no-repeat;
+  background-size: 40px 100%, 40px 100%, 20px 100%, 20px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* Smooth scrolling */
+.table-scroll-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for better UX */
+.table-scroll-container::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: var(--surface-bg);
+  border-radius: 6px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Firefox scrollbar */
+.table-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.3) var(--surface-bg);
+}
+
+/* Mobile: Add scroll hint text */
+@media (max-width: 768px) {
+  .table-wrapper::before {
+    content: '← Scroll for more →';
+    display: block;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    background: var(--surface-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    font-style: italic;
+  }
+}
+
+/* Dark theme adjustments */
+:root[data-theme="dark"] .table-scroll-container {
+  background-image:
+    linear-gradient(to right, var(--primary-bg) 0%, transparent 40px),
+    linear-gradient(to left, var(--primary-bg) 0%, transparent 40px),
+    linear-gradient(to right, rgba(0, 0, 0, 0.4) 0%, transparent 20px),
+    linear-gradient(to left, rgba(0, 0, 0, 0.4) 0%, transparent 20px);
+}

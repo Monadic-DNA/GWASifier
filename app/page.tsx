@@ -517,6 +517,7 @@ function MainContent() {
       </section>
 
       <section className="table-wrapper" aria-busy={loading}>
+        <div className="table-scroll-container">
         <table>
           <thead>
             <tr>
@@ -684,6 +685,7 @@ function MainContent() {
               })}
           </tbody>
         </table>
+        </div>
       </section>
       </main>
       <Footer />
