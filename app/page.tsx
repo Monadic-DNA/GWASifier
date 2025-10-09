@@ -139,6 +139,7 @@ function MainContent() {
   const { genotypeData, isUploaded, setOnDataLoadedCallback } = useGenotype();
   const { setOnResultsLoadedCallback } = useResults();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(defaultFilters.search);
   const [traits, setTraits] = useState<string[]>([]);
   const [studies, setStudies] = useState<Study[]>([]);
   const [meta, setMeta] = useState<Omit<StudiesResponse, "data" | "error">>({
@@ -160,6 +161,14 @@ function MainContent() {
       setShowTermsModal(true);
     }
   }, []);
+
+  // Debounce search input to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
   const updateFilter = useCallback(<Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
     setFilters((prev) => {
@@ -203,7 +212,9 @@ function MainContent() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const query = buildQuery(filters);
+    // Use debounced search value for API call
+    const apiFilters = { ...filters, search: debouncedSearch };
+    const query = buildQuery(apiFilters);
     const startTime = performance.now();
     setLoading(true);
     setError(null);
@@ -222,14 +233,14 @@ function MainContent() {
         let filteredData = payload.data ?? [];
 
         // Client-side filtering for user SNPs
-        if (filters.requireUserSNPs && genotypeData) {
+        if (apiFilters.requireUserSNPs && genotypeData) {
           filteredData = filteredData.filter(study => {
             // First check if study has matching SNPs with user data
             const hasUserSNPs = hasMatchingSNPs(genotypeData, study.snps);
             if (!hasUserSNPs) return false;
 
             // If "Require genotype" is also enabled, ensure the study has genotype data
-            if (filters.excludeMissingGenotype) {
+            if (apiFilters.excludeMissingGenotype) {
               const hasGenotype = study.strongest_snp_risk_allele &&
                 study.strongest_snp_risk_allele.trim().length > 0 &&
                 study.strongest_snp_risk_allele.trim() !== '?' &&
@@ -248,7 +259,7 @@ function MainContent() {
         setStudies(filteredData);
         setMeta({
           total: filteredData.length,
-          limit: payload.limit ?? filters.limit,
+          limit: payload.limit ?? apiFilters.limit,
           truncated: payload.truncated ?? false,
           sourceCount: payload.sourceCount ?? 0,
         });
@@ -267,7 +278,7 @@ function MainContent() {
       });
 
     return () => controller.abort();
-  }, [filters, genotypeData]);
+  }, [debouncedSearch, filters.trait, filters.minSampleSize, filters.maxPValue, filters.excludeLowQuality, filters.excludeMissingGenotype, filters.requireUserSNPs, filters.sort, filters.sortDirection, filters.limit, filters.confidenceBand, genotypeData]);
 
   const qualitySummary = useMemo<QualitySummary>(() => {
     return studies.reduce<QualitySummary>(
@@ -284,6 +295,7 @@ function MainContent() {
 
   const resetFilters = () => {
     setFilters(defaultFilters);
+    setDebouncedSearch(defaultFilters.search);
   };
 
 
