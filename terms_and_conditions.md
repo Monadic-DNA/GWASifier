@@ -1,6 +1,6 @@
 # Monadic DNA Explorer — Terms and Conditions
-**Effective Date:** October 7, 2025 
-**Version:** 1
+**Effective Date:** October 9, 2025 
+**Version:** 1.1
 
 ---
 
@@ -65,15 +65,25 @@ If you upload data belonging to someone else, you confirm that you have legal au
 Uploaded data is processed **locally** in your browser or **transiently in encrypted memory** during an active session.
 We do **not** permanently store, back up, or retain user data after the session ends.
 
-If you choose to save individual study results, those analyzed results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are stored locally in your browser's local storage and persist until manually deleted using the "Clear" button.
+Analysis results (containing specific matched SNPs and calculated risk scores, not your full genetic file) are kept **in memory only** during your session and are automatically deleted when you close the browser or navigate away from the application. If you wish to preserve your results, you may manually export them as a JSON file to your local device using the export feature. We recommend that you:
+- Store exported files securely on encrypted storage
+- Delete exported files when no longer needed
+- Never upload exported files to cloud services or unsecured locations
 
 ### 7.2 Ownership
 You retain full ownership of your uploaded data.  
 By using the Service, you grant Recherché Inc. a **temporary, limited license** to process that data solely for the purpose of providing the Service.
 
 ### 7.3 No Account System
-We do not currently support or require user accounts or contact information.  
-Because we do not collect user identifiers, we **cannot send notifications** (including policy updates or incident alerts).
+We do not currently support or require user accounts or contact information.
+Because we do not collect user identifiers, we **cannot send individualized notifications** (including policy updates or incident alerts).
+
+However, in the event of a security incident, policy change, or other material update, we will make **reasonable efforts** to notify users through:
+- **Prominent in-app banner** displayed on the application homepage
+- **Public announcement** on our official social media channels (Twitter/X, LinkedIn)
+- **Notice posted** in our public GitHub repository
+
+You are encouraged to periodically check the application and our official channels for important announcements.
 
 ---
 

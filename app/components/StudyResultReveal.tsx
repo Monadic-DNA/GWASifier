@@ -88,7 +88,9 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
         data.study.snps,
         data.study.riskAllele,
         data.study.effectSize,
-        data.study.gwasId
+        data.study.gwasId,
+        data.study.effectType || 'OR',
+        data.study.confidenceInterval
       );
 
       setResult(analysisResult);
@@ -118,47 +120,89 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     }
   };
 
-  const formatRiskScore = (score: number, level: string) => {
-    if (level === 'neutral') return '1.0x';
+  const formatRiskScore = (score: number, level: string, effectType?: string) => {
+    if (level === 'neutral') return effectType === 'beta' ? 'baseline' : '1.0x';
+    if (effectType === 'beta') {
+      // For beta coefficients, show the effect size directly, not as a multiplier
+      return `β=${score > 1 ? '+' : ''}${(score - 1).toFixed(3)}`;
+    }
     return `${score.toFixed(2)}x`;
   };
 
   const generateTooltip = (result: UserStudyResult) => {
     if (!result.hasMatch) return "No genetic data available for this study's variants.";
-    
-    const riskMultiplier = result.riskScore!;
+
+    const riskScore = result.riskScore!;
     const riskDirection = result.riskLevel!;
     const userGenotype = result.userGenotype!;
     const riskAllele = result.riskAllele!.split('-').pop() || '';
+    const effectSize = result.effectSize || '';
+    const effectType = result.effectType || 'OR';
+    const confidenceInterval = result.confidenceInterval;
     const userAlleles = userGenotype.split('');
     const riskAlleleCount = userAlleles.filter(allele => allele === riskAllele).length;
-    
+    const isOddsRatio = effectType === 'OR';
+
     let baseExplanation = `Your genotype is ${userGenotype}. `;
-    
+
+    // Determine if this is a protective variant (OR < 1)
+    const rawEffect = parseFloat(effectSize);
+    const isProtective = isOddsRatio && rawEffect < 1;
+
     if (riskAlleleCount === 0) {
-      baseExplanation += `You don't carry the risk variant (${riskAllele}), which means this genetic factor doesn't increase your risk for this trait. `;
+      if (isProtective) {
+        baseExplanation += `You don't carry the protective variant (${riskAllele}), which means you lack this genetic protection against the trait. `;
+      } else {
+        baseExplanation += `You don't carry the risk variant (${riskAllele}), which means this genetic factor doesn't increase your risk for this trait. `;
+      }
     } else if (riskAlleleCount === 1) {
-      baseExplanation += `You carry one copy of the risk variant (${riskAllele}), meaning you inherited it from one parent. `;
+      if (isProtective) {
+        baseExplanation += `You carry one copy of the protective variant (${riskAllele}), meaning you inherited it from one parent. `;
+      } else {
+        baseExplanation += `You carry one copy of the risk variant (${riskAllele}), meaning you inherited it from one parent. `;
+      }
     } else {
-      baseExplanation += `You carry two copies of the risk variant (${riskAllele}), meaning you inherited it from both parents. `;
+      if (isProtective) {
+        baseExplanation += `You carry two copies of the protective variant (${riskAllele}), meaning you inherited it from both parents. `;
+      } else {
+        baseExplanation += `You carry two copies of the risk variant (${riskAllele}), meaning you inherited it from both parents. `;
+      }
     }
 
     if (riskDirection === 'neutral') {
       baseExplanation += "This genetic variant appears to have no significant effect on your risk.";
-    } else if (riskDirection === 'increased') {
-      if (riskMultiplier < 1.5) {
-        baseExplanation += `This slightly increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. This is a small effect that may be offset by lifestyle and other genetic factors.`;
-      } else if (riskMultiplier < 2.0) {
-        baseExplanation += `This moderately increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Combined with other factors, this could be meaningful for prevention strategies.`;
-      } else {
-        baseExplanation += `This substantially increases your risk by ${((riskMultiplier - 1) * 100).toFixed(0)}%. Consider discussing this with a healthcare provider, especially if you have other risk factors.`;
+    } else if (isOddsRatio) {
+      // For odds ratios, we can calculate relative risk changes (but baseline risk matters)
+      if (riskDirection === 'increased') {
+        const percentChange = ((riskScore - 1) * 100).toFixed(0);
+
+        if (isProtective && riskAlleleCount === 0) {
+          // Non-carrier of protective allele
+          baseExplanation += `Without this protective variant, your odds are ${percentChange}% higher relative to those who carry it. `;
+          baseExplanation += `This means you lack a genetic advantage, though lifestyle and other factors remain important. `;
+        } else if (riskScore < 1.5) {
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. This is a small effect that may be offset by lifestyle and other genetic factors. `;
+        } else if (riskScore < 2.0) {
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. Combined with other factors, this could be meaningful for prevention strategies. `;
+        } else {
+          baseExplanation += `This variant shows a ${percentChange}% relative increase in odds. Consider discussing this with a healthcare provider, especially if you have other risk factors. `;
+        }
+        baseExplanation += `Important: this percentage reflects relative odds, not absolute risk. The actual impact depends on the baseline population risk (not shown here), confidence intervals, and other genetic/environmental factors.`;
+      } else if (riskDirection === 'decreased') {
+        const percentChange = ((1 - riskScore) * 100).toFixed(0);
+        baseExplanation += `This protective variant reduces your odds by ${percentChange}% relative to non-carriers. This is a favorable genetic factor. Important: this reflects relative odds, not absolute risk reduction. The actual impact depends on baseline population risk and other factors.`;
       }
-    } else if (riskDirection === 'decreased') {
-      baseExplanation += `This genetic variant appears to be protective, potentially reducing your risk by ${((1 - riskMultiplier) * 100).toFixed(0)}%. This is a favorable genetic factor for this trait.`;
+    } else {
+      // For beta coefficients, we cannot convert to percentage risk - describe the effect directionally
+      if (riskDirection === 'increased') {
+        baseExplanation += `This genetic variant is associated with higher values for this trait. The effect size indicates a per-allele increase, though this does not directly translate to a percentage risk change. Clinical significance depends on the trait's measurement scale and other factors.`;
+      } else if (riskDirection === 'decreased') {
+        baseExplanation += `This genetic variant is associated with lower values for this trait. The effect size indicates a per-allele decrease, though this does not directly translate to a percentage risk change. Clinical significance depends on the trait's measurement scale and other factors.`;
+      }
     }
 
     baseExplanation += ` Remember that genetics is just one piece of the puzzle - lifestyle, environment, and other genetic variants all play important roles.`;
-    
+
     return baseExplanation;
   };
 
@@ -192,7 +236,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
               Your genotype: <span className="genotype-value">{result.userGenotype}</span>
             </div>
             <div className={`risk-score risk-${result.riskLevel}`}>
-              {formatRiskScore(result.riskScore!, result.riskLevel!)}
+              {formatRiskScore(result.riskScore!, result.riskLevel!, result.effectType)}
               <span className="risk-label">
                 {result.riskLevel === 'increased' ? '↑' : result.riskLevel === 'decreased' ? '↓' : '→'}
               </span>
@@ -210,9 +254,17 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     );
   }
 
-  // Only show the reveal button if we have user data and matching SNPs
-  if (!isUploaded || !hasMatchingSNPs(genotypeData, snps)) {
-    return null;
+  // Show appropriate message if no user data or no matching SNPs
+  if (!isUploaded) {
+    return null; // No data uploaded yet - don't show anything
+  }
+
+  if (!hasMatchingSNPs(genotypeData, snps)) {
+    return (
+      <div className="user-result no-match" title="Your genetic data file does not contain the SNP variants tested in this study.">
+        No data
+      </div>
+    );
   }
 
   return (

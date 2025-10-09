@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { executeQuery, executeQuerySingle, getDbType } from "@/lib/db";
+import { validateOrigin } from "@/lib/origin-validator";
 import {
   computeQualityFlags,
   formatNumber,
@@ -8,6 +9,7 @@ import {
   parseLogPValue,
   parsePValue,
   parseSampleSize,
+  QualityFlag,
 } from "@/lib/parsing";
 
 type ConfidenceBand = "high" | "medium" | "low";
@@ -41,7 +43,7 @@ type Study = RawStudy & {
   pValueNumeric: number | null;
   pValueLabel: string;
   logPValue: number | null;
-  qualityFlags: string[];
+  qualityFlags: QualityFlag[];
   isLowQuality: boolean;
   confidenceBand: ConfidenceBand;
   publicationDate: number | null;
@@ -192,9 +194,12 @@ function determineConfidenceBand(
   sampleSize: number | null,
   pValue: number | null,
   logPValue: number | null,
-  isLowQuality: boolean,
+  qualityFlags: Array<{ severity: string }>,
 ): ConfidenceBand {
-  if (isLowQuality) {
+  // Only downgrade to low if there are MAJOR quality issues
+  const hasMajorFlags = qualityFlags.some(flag => flag.severity === 'major');
+
+  if (hasMajorFlags) {
     return "low";
   }
 
@@ -217,10 +222,15 @@ function determineConfidenceBand(
     return "medium";
   }
 
+  // Minor flags don't prevent medium classification
+  // but studies with minor flags and not meeting medium criteria are low
   return "low";
 }
 
 export async function GET(request: NextRequest) {
+  // Validate origin
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const searchParams = request.nextUrl.searchParams;
   const search = searchParams.get("search")?.trim();
@@ -259,6 +269,11 @@ export async function GET(request: NextRequest) {
 
   // Use appropriate ID selection based on database type
   const dbType = getDbType();
+  // NOTE: hashtext() is a 32-bit non-cryptographic hash with potential collision risk.
+  // For production with high study volumes, consider migrating to a stable UUID column
+  // computed during data ingestion to eliminate collision probability.
+  // Current risk is low given GWAS catalog size (~hundreds of thousands of studies) and
+  // the composite key includes multiple discriminating fields (accession, SNPs, p-value, OR).
   const idSelection = dbType === 'postgres'
     ? 'hashtext(COALESCE(study_accession, \'\') || COALESCE(snps, \'\') || COALESCE(strongest_snp_risk_allele, \'\') || COALESCE(p_value, \'\') || COALESCE(or_or_beta::text, \'\')) AS id'
     : 'rowid AS id';
@@ -300,8 +315,9 @@ export async function GET(request: NextRequest) {
       const pValueNumeric = parsePValue(row.p_value);
       const logPValue = parseLogPValue(row.pvalue_mlog) ?? (pValueNumeric ? -Math.log10(pValueNumeric) : null);
       const qualityFlags = computeQualityFlags(sampleSize, pValueNumeric, logPValue);
-      const isLowQuality = qualityFlags.length > 0;
-      const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, isLowQuality);
+      const hasMajorFlags = qualityFlags.some(f => f.severity === 'major');
+      const isLowQuality = hasMajorFlags; // Only major flags indicate truly low quality
+      const confidenceBand = determineConfidenceBand(sampleSize, pValueNumeric, logPValue, qualityFlags);
       const publicationDate = parseStudyDate(row.date);
       return {
         ...row,

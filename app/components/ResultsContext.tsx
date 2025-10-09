@@ -18,37 +18,25 @@ type ResultsContextType = {
 const ResultsContext = createContext<ResultsContextType | null>(null);
 
 export function ResultsProvider({ children }: { children: ReactNode }) {
+  // SECURITY: Results stored in memory only, cleared on session end
   const [savedResults, setSavedResults] = useState<SavedResult[]>([]);
   const [onResultsLoaded, setOnResultsLoaded] = useState<(() => void) | undefined>();
 
-  // Load results from localStorage on mount
-  useEffect(() => {
-    const stored = ResultsManager.loadFromLocalStorage();
-    if (stored && stored.results.length > 0) {
-      setSavedResults(stored.results);
-    }
-  }, []);
+  // No localStorage loading - data is memory-only
 
   const addResult = (result: SavedResult) => {
     setSavedResults(prev => {
       const filtered = prev.filter(r => r.studyId !== result.studyId);
-      const updated = [...filtered, result];
-      ResultsManager.saveToLocalStorage(updated);
-      return updated;
+      return [...filtered, result];
     });
   };
 
   const removeResult = (studyId: number) => {
-    setSavedResults(prev => {
-      const filtered = prev.filter(r => r.studyId !== studyId);
-      ResultsManager.saveToLocalStorage(filtered);
-      return filtered;
-    });
+    setSavedResults(prev => prev.filter(r => r.studyId !== studyId));
   };
 
   const clearResults = () => {
     setSavedResults([]);
-    ResultsManager.clearLocalStorage();
   };
 
   const saveToFile = (genotypeSize?: number, genotypeHash?: string) => {
@@ -67,7 +55,7 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     try {
       const session = await ResultsManager.loadResultsFromFile();
       setSavedResults(session.results);
-      ResultsManager.saveToLocalStorage(session.results);
+      // SECURITY: No longer saving to localStorage
 
       // Call the callback if it exists
       if (onResultsLoaded) {
