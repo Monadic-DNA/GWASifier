@@ -38,9 +38,11 @@ function isValidDelegationRequest(delegationRequest: any): boolean {
     return false;
   }
 
-  // The delegation request should have specific structure from NilAI SDK
-  // At minimum it should have some identifiable fields
-  if (!delegationRequest.publicKey || typeof delegationRequest.publicKey !== 'string') {
+  // The delegation request should be a non-empty object from NilAI SDK
+  // We're being lenient here since the SDK structure may vary
+  // The main check is that it's a valid object with some properties
+  const keys = Object.keys(delegationRequest);
+  if (keys.length === 0) {
     return false;
   }
 
@@ -95,12 +97,14 @@ export async function POST(request: NextRequest) {
 
     // Validate delegation request structure
     if (!isValidDelegationRequest(delegationRequest)) {
-      console.warn(`Invalid delegation request from IP: ${rateLimitKey}`);
+      console.warn(`Invalid delegation request from IP: ${rateLimitKey}`, delegationRequest);
       return NextResponse.json(
         { error: 'Invalid delegation request format' },
         { status: 400 }
       );
     }
+
+    console.log('Valid delegation request received:', Object.keys(delegationRequest));
 
     // Check for NilAI API key
     const apiKey = process.env.NILLION_API_KEY;

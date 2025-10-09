@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SavedResult } from "@/lib/results-manager";
 import { NilaiOpenAIClient, AuthType } from "@nillion/nilai-ts";
+import NilAIConsentModal from "./NilAIConsentModal";
 
 type LLMCommentaryModalProps = {
   isOpen: boolean;
@@ -10,6 +11,8 @@ type LLMCommentaryModalProps = {
   currentResult: SavedResult;
   allResults: SavedResult[];
 };
+
+const CONSENT_STORAGE_KEY = "nilai_ai_consent_accepted";
 
 export default function LLMCommentaryModal({
   isOpen,
@@ -21,12 +24,41 @@ export default function LLMCommentaryModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [delegationStatus, setDelegationStatus] = useState<string>("");
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [hasConsent, setHasConsent] = useState(false);
+
+  useEffect(() => {
+    // Check if user has previously consented
+    if (typeof window !== "undefined") {
+      const consent = localStorage.getItem(CONSENT_STORAGE_KEY);
+      setHasConsent(consent === "true");
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
+      // Check consent before proceeding
+      if (!hasConsent) {
+        setShowConsentModal(true);
+      } else {
+        fetchCommentary();
+      }
+    }
+  }, [isOpen, hasConsent]);
+
+  const handleConsentAccept = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(CONSENT_STORAGE_KEY, "true");
+      setHasConsent(true);
+      setShowConsentModal(false);
       fetchCommentary();
     }
-  }, [isOpen]);
+  };
+
+  const handleConsentDecline = () => {
+    setShowConsentModal(false);
+    onClose();
+  };
 
   const fetchCommentary = async () => {
     setIsLoading(true);
@@ -155,6 +187,18 @@ Keep your response concise (400-600 words), educational, and reassuring where ap
 
   if (!isOpen) return null;
 
+  // If consent modal is showing, only render that
+  if (showConsentModal) {
+    return (
+      <NilAIConsentModal
+        isOpen={showConsentModal}
+        onAccept={handleConsentAccept}
+        onDecline={handleConsentDecline}
+      />
+    );
+  }
+
+  // Otherwise render the commentary modal
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
