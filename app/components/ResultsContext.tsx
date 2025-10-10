@@ -9,7 +9,7 @@ type ResultsContextType = {
   removeResult: (studyId: number) => void;
   clearResults: () => void;
   saveToFile: (genotypeSize?: number, genotypeHash?: string) => void;
-  loadFromFile: () => Promise<void>;
+  loadFromFile: (currentFileHash?: string | null) => Promise<void>;
   hasResult: (studyId: number) => boolean;
   getResult: (studyId: number) => SavedResult | undefined;
   setOnResultsLoadedCallback: (callback: () => void) => void;
@@ -51,9 +51,23 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     ResultsManager.saveResultsToFile(session);
   };
 
-  const loadFromFile = async () => {
+  const loadFromFile = async (currentFileHash?: string | null) => {
     try {
       const session = await ResultsManager.loadResultsFromFile();
+
+      // Validate that results file matches current DNA file
+      if (currentFileHash && session.genotypeFileHash && session.genotypeFileHash !== currentFileHash) {
+        const proceed = window.confirm(
+          '⚠️ Warning: This results file appears to be from a different DNA file.\n\n' +
+          'Loading these results may show incorrect genetic information.\n\n' +
+          'Do you want to continue anyway?'
+        );
+
+        if (!proceed) {
+          throw new Error('Results file does not match current DNA file');
+        }
+      }
+
       setSavedResults(session.results);
       // SECURITY: No longer saving to localStorage
 

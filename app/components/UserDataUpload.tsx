@@ -188,6 +188,15 @@ export default function UserDataUpload() {
       <label htmlFor="genotype-upload" className={`genotype-upload-label ${isLoading ? 'loading' : ''}`}>
         {isLoading ? 'Loading...' : 'Load genetic data'}
       </label>
+      <a
+        href="https://drive.google.com/file/d/1WK3zZbqmu3_m6LvoQCylyIbWBkoO5pGI/view?usp=sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="sample-file-link"
+        title="Download a sample DNA file to try out the app"
+      >
+        (or try a sample)
+      </a>
       {error && (
         <div className="genotype-error" title={error}>
           Upload failed
