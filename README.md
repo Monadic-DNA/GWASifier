@@ -76,6 +76,26 @@ psql $POSTGRES_DB < sql/postgresql_indexes.sql
 
 These indexes can improve query performance by 10-100x for search operations. See `sql/README.md` for detailed instructions.
 
+## License
+
+**Dual License:** This software is available under a dual licensing model:
+
+### Personal/Non-Commercial Use - MIT License
+Free for personal, educational, academic, and non-commercial use under the MIT License. See [LICENSE-MIT.md](LICENSE-MIT.md) for details.
+
+### Commercial Use - Commercial License Required
+Commercial use requires obtaining a commercial license. This includes:
+- Use in commercial products or services
+- Use by for-profit organizations
+- Integration into commercial applications
+- Revenue-generating activities
+
+**Contact us for commercial licensing:**
+- Email: hello@monadicdna.com
+- Website: https://monadicdna.com
+
+See [LICENSE](LICENSE) for full dual license details and [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) for commercial license terms.
+
 ## Citations
 
 Cerezo M, Sollis E, Ji Y, Lewis E, Abid A, Bircan KO, Hall P, Hayhurst J, John S, Mosaku A, Ramachandran S, Foreman A, Ibrahim A, McLaughlin J, Pendlington Z, Stefancsik R, Lambert SA, McMahon A, Morales J, Keane T, Inouye M, Parkinson H, Harris LW.

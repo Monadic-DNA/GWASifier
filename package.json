@@ -10,8 +10,8 @@
     "lint": "next lint"
   },
   "keywords": [],
-  "author": "",
-  "license": "MIT",
+  "author": "Monadic DNA / Recherché Inc",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@nillion/nilai-ts": "^0.0.0-alpha.4",
     "@types/crypto-js": "^4.2.2",
