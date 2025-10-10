@@ -1267,6 +1267,19 @@ tbody tr:hover {
   cursor: wait;
 }
 
+.sample-file-link {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.sample-file-link:hover {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
 .genotype-file-selected {
   display: flex;
   align-items: center;
