@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Monadic DNA Explorer",
   description: "Explore thousands of genetic traits from the GWAS Catalog and analyze your own DNA data with privacy-focused AI insights",
-  keywords: ["GWAS", "genetics", "DNA analysis", "genome explorer", "genetic traits", "GWAS Catalog", "personal genomics"],
+  keywords: ["GWAS", "genetics", "DNA analysis", "genome explorer", "genetic traits", "GWAS Catalog", "personal genomics", "23andMe", "AncestryDNA"],
   authors: [{ name: "Recherché Inc" }],
   icons: {
     icon: [

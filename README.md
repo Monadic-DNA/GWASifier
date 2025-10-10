@@ -7,7 +7,7 @@ Match your DNA data against an open ended catalogue of DNA traits with private A
 ## Features
 
 - Interactive exploration of GWAS Catalog studies with quality-aware filtering
-- Upload and analyze your personal genetic data (23andMe, AncestryDNA, etc.)
+- Upload and analyze your personal genetic data (23andMe, AncestryDNA, Monadic DNA)
 - Private AI analysis powered by Nillion's nilAI - your data is processed in a Trusted Execution Environment
 - Save and export your results
 

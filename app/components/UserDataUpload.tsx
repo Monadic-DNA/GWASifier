@@ -50,7 +50,7 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
 
       // Validate file format
       if (!validateFileFormat(file)) {
-        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe or Monadic DNA.');
+        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe, AncestryDNA, or Monadic DNA.');
       }
 
       // Read and parse file entirely client-side
