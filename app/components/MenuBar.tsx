@@ -34,7 +34,7 @@ export default function MenuBar() {
   const handleLoadFromFile = async () => {
     setIsLoadingFile(true);
     try {
-      await loadFromFile();
+      await loadFromFile(fileHash);
     } catch (error) {
       alert('Failed to load results file: ' + (error as Error).message);
     } finally {
