@@ -2,6 +2,8 @@
 
 Match your DNA data against an open ended catalogue of DNA traits with private AI-powered analysis
 
+**🔗 Repository:** [github.com/Monadic-DNA/Explorer](https://github.com/Monadic-DNA/Explorer)
+
 ## Features
 
 - Interactive exploration of GWAS Catalog studies with quality-aware filtering

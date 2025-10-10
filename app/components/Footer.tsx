@@ -21,6 +21,16 @@ export default function Footer() {
           <p>Follow Monadic DNA:</p>
           <div className="social-icons">
             <a
+              href="https://github.com/Monadic-DNA/Explorer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="social-link"
+              aria-label="GitHub"
+              title="View source on GitHub"
+            >
+              ⭐
+            </a>
+            <a
               href="https://x.com/MonadicDNA"
               target="_blank"
               rel="noopener noreferrer"
