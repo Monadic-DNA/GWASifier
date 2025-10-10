@@ -707,7 +707,7 @@ function MainContent() {
                     : "Lower confidence";
                 return (
                   <tr key={study.id} className={study.isLowQuality ? "low-quality" : undefined}>
-                    <td>
+                    <td data-label="Study">
                       <div className="study-title">
                         {studyLink ? (
                           <a
@@ -729,11 +729,11 @@ function MainContent() {
                         {study.mapped_gene && <span>Gene: {study.mapped_gene}</span>}
                       </div>
                     </td>
-                    <td>{trait}</td>
-                    <td>
+                    <td data-label="Trait">{trait}</td>
+                    <td data-label="Variant & Genotype">
                       <VariantChips snps={study.snps} riskAllele={study.strongest_snp_risk_allele} />
                     </td>
-                    <td>
+                    <td data-label="Relevance">
                       <span className={`metric ${relevanceCategory.className}`}>{relevance}</span>
                       {relevanceCategory.label && (
                         <span className="submetric context-label">{relevanceCategory.label}</span>
@@ -742,7 +742,7 @@ function MainContent() {
                         <span className="submetric">p = {study.pValueLabel}</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Power">
                       <span className={`metric ${powerCategory.className}`}>{power}</span>
                       {powerCategory.label && (
                         <span className="submetric context-label">{powerCategory.label}</span>
@@ -754,7 +754,7 @@ function MainContent() {
                         <span className="submetric">Replication: {study.replication_sample_size}</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Effect">
                       <span className={`metric ${effectCategory.className}`}>{effect}</span>
                       {effectCategory.label && (
                         <span className="submetric context-label">{effectCategory.label}</span>
@@ -763,7 +763,7 @@ function MainContent() {
                         <span className="submetric">RAF: {study.risk_allele_frequency}</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Quality">
                       <div className="quality-cell">
                         <span className={`quality-pill ${study.confidenceBand}`}>{confidenceLabel}</span>
                         {study.qualityFlags.length > 0 && (
@@ -777,9 +777,9 @@ function MainContent() {
                         )}
                       </div>
                     </td>
-                    <td>
-                      <StudyResultReveal 
-                        studyId={study.id} 
+                    <td data-label="Your Result">
+                      <StudyResultReveal
+                        studyId={study.id}
                         snps={study.snps}
                         traitName={trait}
                         studyTitle={study.study || "Untitled study"}

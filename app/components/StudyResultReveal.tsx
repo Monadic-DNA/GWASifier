@@ -218,7 +218,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
     if (!result.hasMatch) {
       return (
         <div className="user-result no-match">
-          No genetic data match
+          No match found—your DNA is unique here
         </div>
       );
     }
@@ -288,7 +288,7 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
         onClick={handleRevealClick}
         disabled={isLoading}
       >
-        {isLoading ? '...' : 'Your result'}
+        {isLoading ? 'Calculating...' : 'Reveal your match'}
       </button>
     </>
   );

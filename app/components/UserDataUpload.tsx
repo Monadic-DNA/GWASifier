@@ -161,10 +161,10 @@ export default function UserDataUpload() {
     return (
       <div className="genotype-status">
         <span className="genotype-indicator">
-          ✓ Personal data loaded
+          ✓ DNA loaded—ready to explore
         </span>
-        <button 
-          className="genotype-clear" 
+        <button
+          className="genotype-clear"
           onClick={clearGenotype}
           title="Clear your personal data"
         >
@@ -186,7 +186,7 @@ export default function UserDataUpload() {
         disabled={isLoading}
       />
       <label htmlFor="genotype-upload" className={`genotype-upload-label ${isLoading ? 'loading' : ''}`}>
-        {isLoading ? 'Loading...' : 'Load genetic data'}
+        {isLoading ? 'Analyzing your genetic map...' : 'Load genetic data'}
       </label>
       <a
         href="https://drive.google.com/file/d/1WK3zZbqmu3_m6LvoQCylyIbWBkoO5pGI/view?usp=sharing"

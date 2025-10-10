@@ -3,6 +3,7 @@
 import { useGenotype } from "./UserDataUpload";
 import { parseVariantIds, getMatchingSNPs } from "@/lib/snp-utils";
 import { trackVariantClick } from "@/lib/analytics";
+import { CheckIcon } from "./Icons";
 
 type VariantChipsProps = {
   snps: string | null;
@@ -31,9 +32,14 @@ export default function VariantChips({ snps, riskAllele }: VariantChipsProps) {
               rel="noreferrer"
               title={matchingSNPs.has(variantId) ? 'You have data for this variant' : undefined}
               onClick={() => trackVariantClick(variantId)}
+              aria-label={matchingSNPs.has(variantId) ? `${variantId} - You have data for this variant` : variantId}
             >
               {variantId}
-              {matchingSNPs.has(variantId) && <span className="user-data-indicator">●</span>}
+              {matchingSNPs.has(variantId) && (
+                <span className="user-data-indicator" aria-hidden="true">
+                  <CheckIcon size={12} />
+                </span>
+              )}
             </a>
           ))
         ) : (
