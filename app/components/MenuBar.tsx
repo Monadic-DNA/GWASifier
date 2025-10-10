@@ -57,7 +57,7 @@ export default function MenuBar() {
           </a>{" "}
           Explorer
         </h1>
-        <span className="app-subtitle">Explore thousands of genetic studies from the GWAS Catalog, plug in your own DNA</span>
+        <span className="app-subtitle">Explore thousands of genetic traits from the GWAS Catalog, plug in your own DNA</span>
       </div>
 
       <div className="menu-right">
