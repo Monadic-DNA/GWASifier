@@ -273,7 +273,7 @@ Keep your response concise (400-600 words), educational, and reassuring where ap
 
           <div className="commentary-powered-by-header">
             <p className="powered-by">
-              🔒 Powered by <a href="https://nillion.com" target="_blank" rel="noopener noreferrer">Nillion nilAI</a> -
+              🛡️ Powered by <a href="https://nillion.com" target="_blank" rel="noopener noreferrer">Nillion nilAI</a> -
               Privacy-preserving AI in a Trusted Execution Environment
             </p>
           </div>

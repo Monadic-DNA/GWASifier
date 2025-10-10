@@ -31,7 +31,7 @@ export default function NilAIConsentModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-content">
-          <h2>🔒 AI Commentary Privacy Notice</h2>
+          <h2>🛡️ AI Commentary Privacy Notice</h2>
 
           <div className="consent-explanation">
             <p>
