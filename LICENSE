@@ -1,21 +1,48 @@
-MIT License
+# Dual License
 
-Copyright (c) 2025 Monadic DNA
+This software is available under a dual licensing model:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## 1. Personal/Non-Commercial Use - MIT License
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+For personal, educational, academic, or non-commercial use, this software is licensed under the MIT License (see LICENSE-MIT.md).
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## 2. Commercial Use - Commercial License Required
+
+For any commercial use, including but not limited to:
+- Use in commercial products or services
+- Use by for-profit organizations
+- Integration into commercial applications
+- Revenue-generating activities
+
+You must obtain a commercial license by contacting us at:
+
+**Monadic DNA / Recherché Inc**
+Email: support@monadicdna.com
+Website: https://monadicdna.com
+
+## What Qualifies as Commercial Use?
+
+Commercial use includes:
+- Deploying this software as part of a paid product or service
+- Using this software to generate revenue (directly or indirectly)
+- Incorporating this software into commercial applications
+- Using this software in a business or enterprise context
+- Offering this software as a service (SaaS)
+
+## What Qualifies as Non-Commercial Use?
+
+Non-commercial use includes:
+- Personal projects and hobby applications
+- Academic research and education
+- Open-source projects (without commercial backing)
+- Non-profit organizations (501(c)(3) or equivalent)
+- Evaluation and testing purposes
+
+## Questions?
+
+If you're unsure whether your use case requires a commercial license, please contact us at support@monadicdna.com.
+
+---
+
+Copyright (c) 2025 Monadic DNA / Recherché Inc
+All rights reserved.

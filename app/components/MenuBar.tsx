@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import UserDataUpload, { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
+import { FileIcon, SaveIcon, TrashIcon, MessageIcon, ClockIcon } from "./Icons";
 
 export default function MenuBar() {
   const { isUploaded, genotypeData, fileHash } = useGenotype();
@@ -56,7 +57,7 @@ export default function MenuBar() {
           </a>{" "}
           Explorer
         </h1>
-        <span className="app-subtitle">Explore thousands of genetic studies from the GWAS Catalog, plug in your own DNA</span>
+        <span className="app-subtitle">Explore thousands of genetic traits from the GWAS Catalog, plug in your own DNA</span>
       </div>
 
       <div className="menu-right">
@@ -72,7 +73,7 @@ export default function MenuBar() {
         {isUploaded && (
           <>
             <div className="menu-separator" />
-            <div className="results-section">
+            <div className="results-section menu-group">
               {savedResults.length > 0 && (
                 <span className="stat-item">
                   {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
@@ -85,7 +86,15 @@ export default function MenuBar() {
                   disabled={isLoadingFile}
                   title="Load results from a file"
                 >
-                  {isLoadingFile ? '⏳ Loading...' : '📁 Load'}
+                  {isLoadingFile ? (
+                    <>
+                      <ClockIcon size={14} /> Loading...
+                    </>
+                  ) : (
+                    <>
+                      <FileIcon size={14} /> Load
+                    </>
+                  )}
                 </button>
                 {savedResults.length > 0 && (
                   <>
@@ -94,14 +103,14 @@ export default function MenuBar() {
                       onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
                       title="Export your results to a JSON file"
                     >
-                      💾 Export
+                      <SaveIcon size={14} /> Export
                     </button>
                     <button
                       className="control-button clear"
                       onClick={clearResults}
                       title="Clear all saved results"
                     >
-                      🗑️ Clear
+                      <TrashIcon size={14} /> Clear
                     </button>
                   </>
                 )}
@@ -110,24 +119,28 @@ export default function MenuBar() {
           </>
         )}
 
-        <a
-          href="https://recherche.discourse.group/c/public/monadic-dna/30"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="feedback-button"
-          title="Share your feedback on our forum"
-        >
-          💬 Feedback
-        </a>
+        <div className="menu-separator" />
 
-        <button
-          className="theme-toggle"
-          onClick={toggleTheme}
-          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        >
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
+        <div className="utility-section menu-group">
+          <a
+            href="https://recherche.discourse.group/c/public/monadic-dna/30"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-button"
+            title="Join fellow explorers—share your feedback on our forum"
+          >
+            <MessageIcon size={14} /> Feedback
+          </a>
+
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+        </div>
       </div>
     </div>
   );

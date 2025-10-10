@@ -50,7 +50,7 @@ export function GenotypeProvider({ children }: { children: React.ReactNode }) {
 
       // Validate file format
       if (!validateFileFormat(file)) {
-        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe or Monadic DNA.');
+        throw new Error('Invalid file format. Please upload a .txt, .tsv, or .csv file from 23andMe, AncestryDNA, or Monadic DNA.');
       }
 
       // Read and parse file entirely client-side
@@ -161,10 +161,10 @@ export default function UserDataUpload() {
     return (
       <div className="genotype-status">
         <span className="genotype-indicator">
-          ✓ Personal data loaded
+          ✓ DNA loaded—ready to explore
         </span>
-        <button 
-          className="genotype-clear" 
+        <button
+          className="genotype-clear"
           onClick={clearGenotype}
           title="Clear your personal data"
         >
@@ -186,7 +186,7 @@ export default function UserDataUpload() {
         disabled={isLoading}
       />
       <label htmlFor="genotype-upload" className={`genotype-upload-label ${isLoading ? 'loading' : ''}`}>
-        {isLoading ? 'Loading...' : 'Load genetic data'}
+        {isLoading ? 'Analyzing your genetic map...' : 'Load genetic data'}
       </label>
       <a
         href="https://drive.google.com/file/d/1WK3zZbqmu3_m6LvoQCylyIbWBkoO5pGI/view?usp=sharing"

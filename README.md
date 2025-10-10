@@ -2,10 +2,12 @@
 
 Match your DNA data against an open ended catalogue of DNA traits with private AI-powered analysis
 
+**🔗 Repository:** [github.com/Monadic-DNA/Explorer](https://github.com/Monadic-DNA/Explorer)
+
 ## Features
 
 - Interactive exploration of GWAS Catalog studies with quality-aware filtering
-- Upload and analyze your personal genetic data (23andMe, AncestryDNA, etc.)
+- Upload and analyze your personal genetic data (23andMe, AncestryDNA, Monadic DNA)
 - Private AI analysis powered by Nillion's nilAI - your data is processed in a Trusted Execution Environment
 - Save and export your results
 
@@ -75,6 +77,26 @@ psql $POSTGRES_DB < sql/postgresql_indexes.sql
 ```
 
 These indexes can improve query performance by 10-100x for search operations. See `sql/README.md` for detailed instructions.
+
+## License
+
+**Dual License:** This software is available under a dual licensing model:
+
+### Personal/Non-Commercial Use - MIT License
+Free for personal, educational, academic, and non-commercial use under the MIT License. See [LICENSE-MIT.md](LICENSE-MIT.md) for details.
+
+### Commercial Use - Commercial License Required
+Commercial use requires obtaining a commercial license. This includes:
+- Use in commercial products or services
+- Use by for-profit organizations
+- Integration into commercial applications
+- Revenue-generating activities
+
+**Contact us for commercial licensing:**
+- Email: hello@monadicdna.com
+- Website: https://monadicdna.com
+
+See [LICENSE](LICENSE) for full dual license details and [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) for commercial license terms.
 
 ## Citations
 

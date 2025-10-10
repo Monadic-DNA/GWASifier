@@ -1,5 +1,7 @@
 "use client";
 
+import { CheckIcon, CircleIcon, WarningIcon, InfoIcon, ChartIcon } from "./Icons";
+
 type StudyMetadata = {
   initial_sample_size: string | null;
   replication_sample_size: string | null;
@@ -62,7 +64,9 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
   return (
     <div className="study-quality-indicators">
       <div className="quality-header">
-        <span className="quality-icon-large">📊</span>
+        <span className="quality-icon-large">
+          <ChartIcon size={24} />
+        </span>
         <div>
           <h3>Study Quality & Context</h3>
           <p className="quality-subtitle">
@@ -74,7 +78,13 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
       <div className="quality-grid">
         <div className={`quality-item quality-${sampleQuality.status}`}>
           <div className="quality-icon">
-            {sampleQuality.status === 'good' ? '✓' : sampleQuality.status === 'moderate' ? '○' : '⚠'}
+            {sampleQuality.status === 'good' ? (
+              <CheckIcon size={18} />
+            ) : sampleQuality.status === 'moderate' ? (
+              <CircleIcon size={18} />
+            ) : (
+              <WarningIcon size={18} />
+            )}
           </div>
           <div className="quality-content">
             <strong>Sample Size:</strong> {initialSample.count.toLocaleString()} participants
@@ -84,7 +94,9 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
 
         {initialSample.hasAncestry && (
           <div className="quality-item quality-limited">
-            <div className="quality-icon">⚠</div>
+            <div className="quality-icon">
+              <WarningIcon size={18} />
+            </div>
             <div className="quality-content">
               <strong>Ancestry:</strong> {initialSample.ancestryInfo}
               <div className="quality-note">
@@ -95,7 +107,9 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
         )}
 
         <div className={`quality-item quality-${hasReplication ? 'good' : 'limited'}`}>
-          <div className="quality-icon">{hasReplication ? '✓' : '⚠'}</div>
+          <div className="quality-icon">
+            {hasReplication ? <CheckIcon size={18} /> : <WarningIcon size={18} />}
+          </div>
           <div className="quality-content">
             <strong>Replication:</strong> {hasReplication
               ? `Yes (${replicationSample.count.toLocaleString()} participants)`
@@ -105,7 +119,13 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
 
         <div className={`quality-item quality-${pValueQuality.status}`}>
           <div className="quality-icon">
-            {pValueQuality.status === 'good' ? '✓' : pValueQuality.status === 'moderate' ? '○' : '⚠'}
+            {pValueQuality.status === 'good' ? (
+              <CheckIcon size={18} />
+            ) : pValueQuality.status === 'moderate' ? (
+              <CircleIcon size={18} />
+            ) : (
+              <WarningIcon size={18} />
+            )}
           </div>
           <div className="quality-content">
             <strong>Statistical Significance:</strong> p = {metadata.p_value || 'Not reported'}
@@ -115,7 +135,9 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
 
         {metadata.date && (
           <div className="quality-item quality-moderate">
-            <div className="quality-icon">ℹ</div>
+            <div className="quality-icon">
+              <InfoIcon size={18} />
+            </div>
             <div className="quality-content">
               <strong>Publication Date:</strong> {metadata.date}
               {(() => {
@@ -133,7 +155,9 @@ export default function StudyQualityIndicators({ metadata }: StudyQualityIndicat
       </div>
 
       <div className="quality-disclaimer">
-        <strong>⚠️ Important:</strong> The AI commentary below may not fully account for these limitations.
+        <strong>
+          <WarningIcon size={16} className="inline-icon" /> Important:
+        </strong> The AI commentary below may not fully account for these limitations.
         Study quality, ancestry differences, and the strength of evidence should all factor into how you
         interpret these results. Always consult a healthcare professional or genetic counselor for
         personalized interpretation.
