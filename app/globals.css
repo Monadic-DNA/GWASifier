@@ -1101,6 +1101,66 @@ tbody tr:hover {
   color: var(--text-muted);
 }
 
+.submetric.context-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 0.15rem;
+}
+
+/* Relevance categories */
+.metric.relevance-strong {
+  color: #16a34a;
+}
+
+.metric.relevance-moderate {
+  color: #ca8a04;
+}
+
+.metric.relevance-weak {
+  color: #dc2626;
+}
+
+/* Power categories */
+.metric.power-large {
+  color: #16a34a;
+}
+
+.metric.power-medium {
+  color: #2563eb;
+}
+
+.metric.power-small {
+  color: #ca8a04;
+}
+
+.metric.power-very-small {
+  color: #dc2626;
+}
+
+/* Effect categories */
+.metric.effect-large {
+  color: #dc2626;
+}
+
+.metric.effect-moderate {
+  color: #ea580c;
+}
+
+.metric.effect-small {
+  color: #2563eb;
+}
+
+.metric.effect-none {
+  color: #71717a;
+}
+
+.metric.effect-protective,
+.metric.effect-slight-protective {
+  color: #16a34a;
+}
+
 .quality-cell {
   display: flex;
   flex-direction: column;

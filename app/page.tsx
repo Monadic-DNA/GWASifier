@@ -119,6 +119,45 @@ function parseVariantIds(snps: string | null): string[] {
     .filter(Boolean);
 }
 
+function getRelevanceCategory(logPValue: number | null): { label: string; className: string } {
+  if (logPValue === null) return { label: "", className: "" };
+  if (logPValue >= 9) return { label: "strong", className: "relevance-strong" };
+  if (logPValue >= 7) return { label: "moderate", className: "relevance-moderate" };
+  return { label: "weak", className: "relevance-weak" };
+}
+
+function getPowerCategory(sampleSize: number | null): { label: string; className: string } {
+  if (sampleSize === null) return { label: "", className: "" };
+  if (sampleSize >= 50000) return { label: "large study", className: "power-large" };
+  if (sampleSize >= 5000) return { label: "medium study", className: "power-medium" };
+  if (sampleSize >= 1000) return { label: "small study", className: "power-small" };
+  return { label: "very small", className: "power-very-small" };
+}
+
+function getEffectCategory(effectStr: string | null): { label: string; className: string } {
+  if (!effectStr) return { label: "", className: "" };
+  const effect = parseFloat(effectStr);
+  if (isNaN(effect)) return { label: "", className: "" };
+
+  // Check if this looks like an odds ratio (typically > 0.5 and < 10)
+  // vs a beta coefficient (can be any value, often small)
+  const likelyOR = effect > 0.5 && effect < 10;
+
+  if (likelyOR) {
+    if (Math.abs(effect - 1.0) < 0.05) return { label: "no effect", className: "effect-none" };
+    if (effect < 1.0) {
+      if (effect <= 0.67) return { label: "protective", className: "effect-protective" };
+      return { label: "slightly protective", className: "effect-slight-protective" };
+    }
+    if (effect >= 2.0) return { label: "large effect", className: "effect-large" };
+    if (effect >= 1.5) return { label: "moderate effect", className: "effect-moderate" };
+    return { label: "small effect", className: "effect-small" };
+  }
+
+  // For beta coefficients, we can't easily categorize without trait context
+  return { label: "", className: "" };
+}
+
 function buildQuery(filters: Filters): string {
   const params = new URLSearchParams();
   params.set("limit", String(filters.limit));
@@ -590,7 +629,7 @@ function MainContent() {
               </th>
               <th
                 scope="col"
-                title="Statistical strength of the finding. Click to sort by relevance (-log₁₀ p-value)."
+                title="Statistical strength of the finding (-log₁₀ p-value). Higher is better. Strong: ≥9, Moderate: 7-9, Weak: <7. Genome-wide significance threshold is ~7.3. Click to sort by relevance."
                 className={`sortable ${filters.sort === "relevance" ? "sorted" : ""}`}
                 onClick={() => handleColumnSort("relevance")}
               >
@@ -602,7 +641,7 @@ function MainContent() {
               </th>
               <th
                 scope="col"
-                title="How many people were studied. Click to sort by sample size (study power)."
+                title="How many people were studied (sample size). Larger is better. Large: ≥50k, Medium: 5k-50k, Small: 1k-5k, Very small: <1k. Studies with <500 participants are often unreliable. Click to sort by sample size."
                 className={`sortable ${filters.sort === "power" ? "sorted" : ""}`}
                 onClick={() => handleColumnSort("power")}
               >
@@ -612,7 +651,7 @@ function MainContent() {
                   <span className="sort-indicator">{filters.sortDirection === "asc" ? " ↑" : " ↓"}</span>
                 )}
               </th>
-              <th scope="col" title="How much this genetic variant changes the trait. For diseases, this might be odds ratio (how much more likely you are to get the disease). For measurements like height, it's the average difference.">
+              <th scope="col" title="How much this genetic variant changes the trait. For odds ratios (OR): 1.0 = no effect, 1.1-1.5 = small effect, 1.5-2.0 = moderate effect, >2.0 = large effect. Values <1.0 indicate protective effects. For beta coefficients, the magnitude depends on the trait's measurement scale.">
                 Effect <span className="info-icon">ⓘ</span>
               </th>
               <th scope="col" title="Our assessment of study reliability based on sample size, statistical significance, and data quality. High confidence studies are most trustworthy.">
@@ -649,6 +688,9 @@ function MainContent() {
                 const relevance = study.logPValue ? study.logPValue.toFixed(2) : "—";
                 const power = study.sampleSizeLabel ?? "—";
                 const effect = study.or_or_beta ?? "—";
+                const relevanceCategory = getRelevanceCategory(study.logPValue);
+                const powerCategory = getPowerCategory(study.sampleSize);
+                const effectCategory = getEffectCategory(study.or_or_beta);
                 const gwasLink = study.study_accession
                   ? `https://www.ebi.ac.uk/gwas/studies/${study.study_accession}`
                   : null;
@@ -692,13 +734,19 @@ function MainContent() {
                       <VariantChips snps={study.snps} riskAllele={study.strongest_snp_risk_allele} />
                     </td>
                     <td>
-                      <span className="metric">{relevance}</span>
+                      <span className={`metric ${relevanceCategory.className}`}>{relevance}</span>
+                      {relevanceCategory.label && (
+                        <span className="submetric context-label">{relevanceCategory.label}</span>
+                      )}
                       {study.pValueNumeric !== null && (
                         <span className="submetric">p = {study.pValueLabel}</span>
                       )}
                     </td>
                     <td>
-                      <span className="metric">{power}</span>
+                      <span className={`metric ${powerCategory.className}`}>{power}</span>
+                      {powerCategory.label && (
+                        <span className="submetric context-label">{powerCategory.label}</span>
+                      )}
                       {study.initial_sample_size && (
                         <span className="submetric">Initial: {study.initial_sample_size}</span>
                       )}
@@ -707,7 +755,10 @@ function MainContent() {
                       )}
                     </td>
                     <td>
-                      <span className="metric">{effect}</span>
+                      <span className={`metric ${effectCategory.className}`}>{effect}</span>
+                      {effectCategory.label && (
+                        <span className="submetric context-label">{effectCategory.label}</span>
+                      )}
                       {study.risk_allele_frequency && (
                         <span className="submetric">RAF: {study.risk_allele_frequency}</span>
                       )}
