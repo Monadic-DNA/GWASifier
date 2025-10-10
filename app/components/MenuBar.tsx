@@ -69,13 +69,15 @@ export default function MenuBar() {
           <UserDataUpload />
         </div>
 
-        {savedResults.length > 0 && (
+        {isUploaded && (
           <>
             <div className="menu-separator" />
             <div className="results-section">
-              <span className="stat-item">
-                {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
-              </span>
+              {savedResults.length > 0 && (
+                <span className="stat-item">
+                  {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
+                </span>
+              )}
               <div className="results-controls">
                 <button
                   className="control-button load"
@@ -85,20 +87,24 @@ export default function MenuBar() {
                 >
                   {isLoadingFile ? '⏳ Loading...' : '📁 Load'}
                 </button>
-                <button
-                  className="control-button save"
-                  onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
-                  title="Export your results to a JSON file"
-                >
-                  💾 Export
-                </button>
-                <button
-                  className="control-button clear"
-                  onClick={clearResults}
-                  title="Clear all saved results"
-                >
-                  🗑️ Clear
-                </button>
+                {savedResults.length > 0 && (
+                  <>
+                    <button
+                      className="control-button save"
+                      onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
+                      title="Export your results to a JSON file"
+                    >
+                      💾 Export
+                    </button>
+                    <button
+                      className="control-button clear"
+                      onClick={clearResults}
+                      title="Clear all saved results"
+                    >
+                      🗑️ Clear
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </>
