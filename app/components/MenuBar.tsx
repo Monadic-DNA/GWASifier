@@ -5,7 +5,13 @@ import UserDataUpload, { useGenotype } from "./UserDataUpload";
 import { useResults } from "./ResultsContext";
 import { FileIcon, SaveIcon, TrashIcon, MessageIcon, ClockIcon } from "./Icons";
 
-export default function MenuBar() {
+type MenuBarProps = {
+  onRunAll?: () => void;
+  isRunningAll?: boolean;
+  runAllProgress?: { current: number; total: number };
+};
+
+export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: MenuBarProps) {
   const { isUploaded, genotypeData, fileHash } = useGenotype();
   const { savedResults, saveToFile, loadFromFile, clearResults } = useResults();
   const [isLoadingFile, setIsLoadingFile] = useState(false);
@@ -72,6 +78,25 @@ export default function MenuBar() {
 
         {isUploaded && (
           <>
+            <div className="menu-separator" />
+            {onRunAll && (
+              <button
+                className="control-button run-all"
+                onClick={onRunAll}
+                disabled={isRunningAll}
+                title={
+                  isRunningAll && runAllProgress
+                    ? `Analyzing study ${runAllProgress.current.toLocaleString()} of ${runAllProgress.total.toLocaleString()}`
+                    : "Analyze all studies in database where you have matching SNPs"
+                }
+              >
+                {isRunningAll && runAllProgress ? (
+                  <>⏳ Running...</>
+                ) : (
+                  <>▶ Run All</>
+                )}
+              </button>
+            )}
             <div className="menu-separator" />
             <div className="results-section menu-group">
               {savedResults.length > 0 && (

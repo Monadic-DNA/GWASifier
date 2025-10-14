@@ -9,7 +9,9 @@ import VariantChips from "./components/VariantChips";
 import Footer from "./components/Footer";
 import DisclaimerModal from "./components/DisclaimerModal";
 import TermsAcceptanceModal from "./components/TermsAcceptanceModal";
+import RunAllModal from "./components/RunAllModal";
 import { hasMatchingSNPs } from "@/lib/snp-utils";
+import { analyzeStudyClientSide } from "@/lib/risk-calculator";
 import {
   trackSearch,
   trackFilterChange,
@@ -64,7 +66,7 @@ type Study = {
   pValueNumeric: number | null;
   pValueLabel: string;
   logPValue: number | null;
-  qualityFlags: string[];
+  qualityFlags: Array<{ message: string; severity: string }>;
   isLowQuality: boolean;
   confidenceBand: ConfidenceBand;
   publicationDate: number | null;
@@ -185,7 +187,7 @@ function buildQuery(filters: Filters): string {
 
 function MainContent() {
   const { genotypeData, isUploaded, setOnDataLoadedCallback } = useGenotype();
-  const { setOnResultsLoadedCallback } = useResults();
+  const { setOnResultsLoadedCallback, addResult, hasResult } = useResults();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [debouncedSearch, setDebouncedSearch] = useState<string>(defaultFilters.search);
   const [traits, setTraits] = useState<string[]>([]);
@@ -200,6 +202,32 @@ function MainContent() {
   const [error, setError] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isRunningAll, setIsRunningAll] = useState(false);
+  const [runAllProgress, setRunAllProgress] = useState({ current: 0, total: 0 });
+  const [showRunAllModal, setShowRunAllModal] = useState(false);
+  const [runAllStatus, setRunAllStatus] = useState<{
+    phase: 'fetching' | 'analyzing' | 'complete' | 'error';
+    fetchedBatches: number;
+    totalStudiesFetched: number;
+    totalInDatabase: number;
+    matchingStudies: number;
+    processedCount: number;
+    totalToProcess: number;
+    matchCount: number;
+    startTime?: number;
+    elapsedSeconds?: number;
+    etaSeconds?: number;
+    errorMessage?: string;
+  }>({
+    phase: 'fetching',
+    fetchedBatches: 0,
+    totalStudiesFetched: 0,
+    totalInDatabase: 0,
+    matchingStudies: 0,
+    processedCount: 0,
+    totalToProcess: 0,
+    matchCount: 0,
+  });
   const [loadTime, setLoadTime] = useState<number | null>(null);
 
   // Check if user has accepted terms on mount
@@ -399,6 +427,214 @@ function MainContent() {
     }
   };
 
+  const handleRunAll = async () => {
+    if (!genotypeData || !isUploaded) {
+      alert("Please upload your genetic data first");
+      return;
+    }
+
+    // Get list of user's SNPs
+    const userSnps = Array.from(genotypeData.keys());
+
+    if (userSnps.length === 0) {
+      alert("No SNPs found in your genetic data");
+      return;
+    }
+
+    const confirmRun = window.confirm(
+      `This will analyze ALL studies in the database where you have matching SNPs. This may take several minutes. Continue?`
+    );
+
+    if (!confirmRun) return;
+
+    // Initialize and show modal
+    setIsRunningAll(true);
+    setShowRunAllModal(true);
+    const startTime = Date.now();
+    setRunAllStatus({
+      phase: 'fetching',
+      fetchedBatches: 0,
+      totalStudiesFetched: 0,
+      totalInDatabase: 0,
+      matchingStudies: 0,
+      processedCount: 0,
+      totalToProcess: 0,
+      matchCount: 0,
+      startTime,
+    });
+    setRunAllProgress({ current: 0, total: 0 });
+
+    try {
+      // Process each batch immediately without queuing - true streaming
+      const batchSize = 10000; // Smaller batches to reduce memory pressure
+      let offset = 0;
+      let fetchedBatches = 0;
+      let totalInDatabase = 0;
+      let totalMatchingStudies = 0;
+      let processedCount = 0;
+      let matchCount = 0;
+
+      // Start in analyzing phase immediately
+      setRunAllStatus(prev => ({
+        ...prev,
+        phase: 'analyzing',
+        totalToProcess: 0,
+        startTime,
+      }));
+
+      // Fetch and process batches sequentially to control memory
+      while (true) {
+        const response = await fetch(
+          `/api/studies?limit=${batchSize}&excludeLowQuality=false&excludeMissingGenotype=false&offset=${offset}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch studies batch at offset ${offset}`);
+        }
+
+        const data: StudiesResponse = await response.json();
+        fetchedBatches++;
+
+        // Get total count from first batch
+        if (offset === 0 && data.sourceCount) {
+          totalInDatabase = data.sourceCount;
+        }
+
+        // Process each study directly - no intermediate arrays
+        for (const study of data.data) {
+          // Quick filter: check if has SNPs matching user
+          if (!study.snps || !hasMatchingSNPs(genotypeData, study.snps)) {
+            continue;
+          }
+
+          totalMatchingStudies++;
+
+          // Skip if already analyzed
+          if (hasResult(study.id)) {
+            processedCount++;
+            continue;
+          }
+
+          // Skip if no risk allele or effect size
+          if (!study.strongest_snp_risk_allele || !study.or_or_beta) {
+            processedCount++;
+            continue;
+          }
+
+          try {
+            // Perform client-side analysis
+            const analysisResult = analyzeStudyClientSide(
+              genotypeData,
+              study.snps,
+              study.strongest_snp_risk_allele,
+              study.or_or_beta,
+              study.study_accession,
+              'OR',
+              null
+            );
+
+            // Save result if there's a match
+            if (analysisResult.hasMatch) {
+              const trait = study.mapped_trait ?? study.disease_trait ?? "Unknown trait";
+              addResult({
+                studyId: study.id,
+                gwasId: study.study_accession || undefined,
+                traitName: trait,
+                studyTitle: study.study || "Untitled study",
+                userGenotype: analysisResult.userGenotype!,
+                riskAllele: analysisResult.riskAllele!,
+                effectSize: analysisResult.effectSize!,
+                riskScore: analysisResult.riskScore!,
+                riskLevel: analysisResult.riskLevel!,
+                matchedSnp: analysisResult.matchedSnp!,
+                analysisDate: new Date().toISOString(),
+              });
+              matchCount++;
+            }
+          } catch (err) {
+            console.error(`Failed to analyze study ${study.id}:`, err);
+          }
+
+          processedCount++;
+
+          // Update progress every 500 studies and yield to browser
+          if (processedCount % 500 === 0) {
+            const elapsedMs = Date.now() - startTime;
+            const elapsedSeconds = elapsedMs / 1000;
+            const studiesPerSecond = (offset + data.data.length) / elapsedSeconds;
+            const remainingStudies = totalInDatabase - (offset + data.data.length);
+            const etaSeconds = totalInDatabase > 0 && studiesPerSecond > 0
+              ? remainingStudies / studiesPerSecond
+              : 0;
+
+            setRunAllProgress({ current: processedCount, total: totalMatchingStudies });
+            setRunAllStatus(prev => ({
+              ...prev,
+              fetchedBatches,
+              totalStudiesFetched: offset + data.data.length,
+              totalInDatabase,
+              matchingStudies: totalMatchingStudies,
+              processedCount,
+              matchCount,
+              totalToProcess: totalMatchingStudies,
+              elapsedSeconds,
+              etaSeconds,
+            }));
+            // Yield to browser to prevent UI freeze and allow GC
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+
+        // Update status after this batch with timing
+        const elapsedMs = Date.now() - startTime;
+        const elapsedSeconds = elapsedMs / 1000;
+        const studiesPerSecond = (offset + data.data.length) / elapsedSeconds;
+        const remainingStudies = totalInDatabase - (offset + data.data.length);
+        const etaSeconds = totalInDatabase > 0 && studiesPerSecond > 0
+          ? remainingStudies / studiesPerSecond
+          : 0;
+
+        setRunAllProgress({ current: offset + data.data.length, total: totalInDatabase });
+        setRunAllStatus(prev => ({
+          ...prev,
+          fetchedBatches,
+          totalStudiesFetched: offset + data.data.length,
+          totalInDatabase,
+          matchingStudies: totalMatchingStudies,
+          processedCount,
+          matchCount,
+          totalToProcess: totalMatchingStudies,
+          elapsedSeconds,
+          etaSeconds,
+        }));
+
+        // Stop if we got fewer results than requested OR we've reached the total count
+        if (data.data.length < batchSize || (totalInDatabase > 0 && offset + data.data.length >= totalInDatabase)) {
+          break;
+        }
+
+        offset += batchSize;
+      }
+
+      // Complete - preserve final elapsed time
+      const finalElapsedSeconds = (Date.now() - startTime) / 1000;
+      setRunAllStatus(prev => ({
+        ...prev,
+        phase: 'complete',
+        elapsedSeconds: finalElapsedSeconds,
+      }));
+    } catch (error) {
+      console.error('Run All failed:', error);
+      setRunAllStatus(prev => ({
+        ...prev,
+        phase: 'error',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      }));
+    } finally {
+      setIsRunningAll(false);
+    }
+  };
+
   const summaryText = useMemo(() => {
     if (error) {
       return error;
@@ -456,7 +692,11 @@ function MainContent() {
         isOpen={showTermsModal}
         onAccept={() => setShowTermsModal(false)}
       />
-      <MenuBar />
+      <MenuBar
+        onRunAll={handleRunAll}
+        isRunningAll={isRunningAll}
+        runAllProgress={runAllProgress}
+      />
       <main className="page">
         <section className={`panel ${sectionCollapsed ? "collapsed" : ""}`}>
         <div className="panel-header">
@@ -768,9 +1008,9 @@ function MainContent() {
                         <span className={`quality-pill ${study.confidenceBand}`}>{confidenceLabel}</span>
                         {study.qualityFlags.length > 0 && (
                           <div className="quality-flags">
-                            {study.qualityFlags.map((flag) => (
-                              <span key={flag} className="quality-flag">
-                                {flag}
+                            {study.qualityFlags.map((flag, index) => (
+                              <span key={index} className={`quality-flag quality-flag-${flag.severity}`}>
+                                {flag.message}
                               </span>
                             ))}
                           </div>
@@ -794,6 +1034,11 @@ function MainContent() {
       </section>
       </main>
       <Footer />
+      <RunAllModal
+        isOpen={showRunAllModal}
+        onClose={() => setShowRunAllModal(false)}
+        status={runAllStatus}
+      />
     </div>
   );
 }

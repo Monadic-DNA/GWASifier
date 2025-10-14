@@ -2587,3 +2587,151 @@ tbody tr:hover {
     linear-gradient(to right, rgba(0, 0, 0, 0.4) 0%, transparent 20px),
     linear-gradient(to left, rgba(0, 0, 0, 0.4) 0%, transparent 20px);
 }
+
+/* Run All Modal */
+.run-all-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.run-all-modal .modal-body {
+  padding: 1.5rem;
+}
+
+.status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--surface-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-details p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.status-details strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.status-hint {
+  font-size: 0.875rem !important;
+  color: var(--text-muted) !important;
+  font-style: italic;
+}
+
+.error-message {
+  color: var(--accent-red) !important;
+  font-weight: 500;
+}
+
+.status-section.complete .status-details p:not(.status-hint) {
+  font-size: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-button:hover {
+  background: var(--border-color);
+}
+
+.modal-button.primary {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+.modal-button.primary:hover {
+  background: #2563EB;
+  border-color: #2563EB;
+}

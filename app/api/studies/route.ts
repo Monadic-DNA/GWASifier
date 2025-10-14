@@ -235,7 +235,14 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const search = searchParams.get("search")?.trim();
   const trait = searchParams.get("trait")?.trim();
-  const limit = Math.max(10, Math.min(Number(searchParams.get("limit")) || 75, 200));
+
+  // Special parameter for "Run All" - fetches all studies with SNPs
+  const fetchAll = searchParams.get("fetchAll") === "true";
+  // Allow larger batches for pagination (up to 50000 for Run All), or unlimited for fetchAll
+  const requestedLimit = Number(searchParams.get("limit")) || 75;
+  const limit = fetchAll ? 999999 : Math.max(10, Math.min(requestedLimit, 50000));
+  const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
+
   const sort = searchParams.get("sort") ?? "relevance";
   const direction = searchParams.get("direction") === "asc" ? "asc" : "desc";
   const minSampleSize = parseInteger(searchParams.get("minSampleSize"));
@@ -263,6 +270,12 @@ export async function GET(request: NextRequest) {
   if (trait) {
     filters.push("(mapped_trait = ? OR disease_trait = ?)");
     params.push(trait, trait);
+  }
+
+  // For fetchAll, always require SNPs and risk alleles (since we're doing SNP matching)
+  if (fetchAll) {
+    filters.push("(snps IS NOT NULL AND snps != '')");
+    filters.push("(strongest_snp_risk_allele IS NOT NULL AND strongest_snp_risk_allele != '')");
   }
 
   const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
@@ -300,11 +313,14 @@ export async function GET(request: NextRequest) {
        snps
     FROM gwas_catalog
     ${whereClause}
-    LIMIT ?`;
-  const rawLimit = Math.min(limit * 4, 800);
+    LIMIT ? OFFSET ?`;
+  // When fetching for Run All (no filters except SNP requirements), allow full batch size
+  // Otherwise use the 4x multiplier with 800 cap for filtered queries
+  const isRunAllQuery = excludeLowQuality === false && excludeMissingGenotype === false && !search && !trait;
+  const rawLimit = fetchAll ? limit : (isRunAllQuery ? limit : Math.min(limit * 4, 800));
 
   try {
-    const rawRows = await executeQuery<RawStudy>(baseQuery, [...params, rawLimit]);
+    const rawRows = await executeQuery<RawStudy>(baseQuery, [...params, rawLimit, offset]);
 
   const maxPValue = maxPValueRaw ? parsePValue(maxPValueRaw) : null;
   const minLogP = minLogPRaw ? Number(minLogPRaw) : null;
