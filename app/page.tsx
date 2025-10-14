@@ -474,6 +474,10 @@ function MainContent() {
       let processedCount = 0;
       let matchCount = 0;
 
+      // EMA for rate calculation - smoother ETA
+      let smoothedRate = 0;
+      const smoothingFactor = 0.3;
+
       // Start in analyzing phase immediately
       setRunAllStatus(prev => ({
         ...prev,
@@ -561,11 +565,20 @@ function MainContent() {
           if (processedCount % 500 === 0) {
             const elapsedMs = Date.now() - startTime;
             const elapsedSeconds = elapsedMs / 1000;
-            const studiesPerSecond = (offset + data.data.length) / elapsedSeconds;
-            const remainingStudies = totalInDatabase - (offset + data.data.length);
-            const etaSeconds = totalInDatabase > 0 && studiesPerSecond > 0
-              ? remainingStudies / studiesPerSecond
-              : 0;
+
+            // Calculate ETA only after 3+ batches for accuracy
+            let etaSeconds = 0;
+            if (fetchedBatches >= 3 && totalInDatabase > 0) {
+              const instantRate = (offset + data.data.length) / elapsedSeconds;
+              // Exponential moving average for smoother rate
+              smoothedRate = smoothedRate === 0
+                ? instantRate
+                : (smoothingFactor * instantRate) + ((1 - smoothingFactor) * smoothedRate);
+
+              const remainingStudies = totalInDatabase - (offset + data.data.length);
+              // Add 20% safety buffer for slowdown
+              etaSeconds = smoothedRate > 0 ? (remainingStudies / smoothedRate) * 1.2 : 0;
+            }
 
             setRunAllProgress({ current: processedCount, total: totalMatchingStudies });
             setRunAllStatus(prev => ({
@@ -588,11 +601,20 @@ function MainContent() {
         // Update status after this batch with timing
         const elapsedMs = Date.now() - startTime;
         const elapsedSeconds = elapsedMs / 1000;
-        const studiesPerSecond = (offset + data.data.length) / elapsedSeconds;
-        const remainingStudies = totalInDatabase - (offset + data.data.length);
-        const etaSeconds = totalInDatabase > 0 && studiesPerSecond > 0
-          ? remainingStudies / studiesPerSecond
-          : 0;
+
+        // Calculate ETA only after 3+ batches for accuracy
+        let etaSeconds = 0;
+        if (fetchedBatches >= 3 && totalInDatabase > 0) {
+          const instantRate = (offset + data.data.length) / elapsedSeconds;
+          // Exponential moving average for smoother rate
+          smoothedRate = smoothedRate === 0
+            ? instantRate
+            : (smoothingFactor * instantRate) + ((1 - smoothingFactor) * smoothedRate);
+
+          const remainingStudies = totalInDatabase - (offset + data.data.length);
+          // Add 20% safety buffer for slowdown
+          etaSeconds = smoothedRate > 0 ? (remainingStudies / smoothedRate) * 1.2 : 0;
+        }
 
         setRunAllProgress({ current: offset + data.data.length, total: totalInDatabase });
         setRunAllStatus(prev => ({

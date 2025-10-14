@@ -79,8 +79,8 @@ export default function RunAllModal({ isOpen, onClose, status }: RunAllModalProp
                 {status.elapsedSeconds !== undefined && (
                   <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
                 )}
-                {status.etaSeconds !== undefined && status.etaSeconds > 0 && (
-                  <p>ETA: <strong>{formatTime(status.etaSeconds)}</strong></p>
+                {status.etaSeconds !== undefined && (
+                  <p>ETA: <strong>{status.etaSeconds > 0 ? formatTime(status.etaSeconds) : 'Calculating...'}</strong></p>
                 )}
                 <p className="status-hint">Analysis happens instantly as studies are downloaded...</p>
               </div>
