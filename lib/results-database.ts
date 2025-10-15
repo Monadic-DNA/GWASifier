@@ -251,6 +251,24 @@ export class ResultsDatabase {
     return result[0].values.map(row => this.rowToResult(result[0].columns, row));
   }
 
+  // Optimized method for LLM context: Get top N results by effect size, excluding specific gwasId
+  async getTopResultsByEffect(limit: number, excludeGwasId?: string): Promise<SavedResult[]> {
+    if (!this.db) await this.initialize();
+
+    // Order by absolute distance from 1.0 (neutral risk score)
+    // This gives us the most significant results regardless of direction
+    const result = this.db!.exec(`
+      SELECT * FROM results
+      WHERE gwasId IS NOT NULL ${excludeGwasId ? 'AND gwasId != ?' : ''}
+      ORDER BY ABS(riskScore - 1.0) DESC
+      LIMIT ?
+    `, excludeGwasId ? [excludeGwasId, limit] : [limit]);
+
+    if (!result.length) return [];
+
+    return result[0].values.map(row => this.rowToResult(result[0].columns, row));
+  }
+
   async getTraitCategories(): Promise<Array<{ trait: string; count: number }>> {
     if (!this.db) await this.initialize();
 
