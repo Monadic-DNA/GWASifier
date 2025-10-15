@@ -25,12 +25,46 @@ export class ResultsManager {
   // All results are now stored in memory only and cleared on session end
 
   static saveResultsToFile(session: SavedSession): void {
-    const dataStr = JSON.stringify(session, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    // Convert to TSV format (tab-separated to handle commas in data)
+    const headers = [
+      'Study ID',
+      'GWAS ID',
+      'Trait Name',
+      'Study Title',
+      'Your Genotype',
+      'Risk Allele',
+      'Effect Size',
+      'Risk Score',
+      'Risk Level',
+      'Matched SNP',
+      'Analysis Date'
+    ];
+
+    const tsvRows = [headers.join('\t')];
+
+    for (const result of session.results) {
+      const row = [
+        result.studyId,
+        result.gwasId || '',
+        (result.traitName || '').replace(/\t/g, ' '), // Replace tabs with spaces
+        (result.studyTitle || '').replace(/\t/g, ' '),
+        result.userGenotype || '',
+        result.riskAllele || '',
+        result.effectSize || '',
+        result.riskScore,
+        result.riskLevel || '',
+        result.matchedSnp || '',
+        result.analysisDate || ''
+      ];
+      tsvRows.push(row.join('\t'));
+    }
+
+    const tsvContent = tsvRows.join('\n');
+    const dataBlob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
 
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `monadic_dna_explorer_results_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `monadic_dna_explorer_results_${new Date().toISOString().split('T')[0]}.tsv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

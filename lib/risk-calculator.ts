@@ -1,3 +1,5 @@
+import { parseVariantIds } from './snp-utils';
+
 export type UserStudyResult = {
   hasMatch: boolean;
   userGenotype?: string;
@@ -29,7 +31,7 @@ function getComplement(base: string): string {
 }
 
 // Helper function to check if genotype is valid (not a no-call)
-function isValidGenotype(genotype: string): boolean {
+export function isValidGenotype(genotype: string): boolean {
   // Filter out no-calls (--, -, 00, etc.)
   return genotype !== '--' &&
          genotype !== '-' &&
@@ -130,8 +132,8 @@ export function analyzeStudyClientSide(
     return { hasMatch: false };
   }
 
-  // Extract SNP IDs from the study
-  const snpList = studySnps.split(/[;,\s]+/).map(s => s.trim()).filter(Boolean);
+  // Extract SNP IDs from the study (use cached parser)
+  const snpList = parseVariantIds(studySnps);
 
   // Find ALL matching SNPs (not just the first one)
   const allMatches: Array<{

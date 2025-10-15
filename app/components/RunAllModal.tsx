@@ -4,7 +4,7 @@ type RunAllModalProps = {
   isOpen: boolean;
   onClose: () => void;
   status: {
-    phase: 'fetching' | 'analyzing' | 'complete' | 'error';
+    phase: 'fetching' | 'downloading' | 'decompressing' | 'parsing' | 'storing' | 'analyzing' | 'complete' | 'error';
     fetchedBatches: number;
     totalStudiesFetched: number;
     totalInDatabase: number;
@@ -44,25 +44,11 @@ export default function RunAllModal({ isOpen, onClose, status }: RunAllModalProp
         </div>
 
         <div className="modal-body">
-          {status.phase === 'fetching' && (
+          {(status.phase === 'downloading' || status.phase === 'fetching') && (
             <div className="status-section">
               <div className="status-header">
                 <div className="spinner"></div>
-                <h3>Fetching Studies...</h3>
-              </div>
-              <div className="status-details">
-                <p>Batches fetched: <strong>{status.fetchedBatches}</strong></p>
-                <p>Total studies fetched: <strong>{status.totalStudiesFetched.toLocaleString()}</strong></p>
-                <p>Studies matching your SNPs: <strong>{status.matchingStudies.toLocaleString()}</strong></p>
-              </div>
-            </div>
-          )}
-
-          {status.phase === 'analyzing' && (
-            <div className="status-section">
-              <div className="status-header">
-                <div className="spinner"></div>
-                <h3>Processing Studies...</h3>
+                <h3>Downloading GWAS Catalog...</h3>
               </div>
               <div className="progress-bar">
                 <div
@@ -71,18 +57,85 @@ export default function RunAllModal({ isOpen, onClose, status }: RunAllModalProp
                 ></div>
               </div>
               <div className="status-details">
-                {status.totalInDatabase > 0 && (
-                  <p>Database: <strong>{status.totalInDatabase.toLocaleString()}</strong> studies with SNP data</p>
+                <p>Downloaded: <strong>{(status.totalStudiesFetched / 1024 / 1024).toFixed(1)} MB</strong> / {(status.totalInDatabase / 1024 / 1024).toFixed(1)} MB</p>
+                {status.elapsedSeconds !== undefined && (
+                  <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
                 )}
-                <p>Fetched: <strong>{status.totalStudiesFetched.toLocaleString()}</strong> / {status.totalInDatabase > 0 ? status.totalInDatabase.toLocaleString() : '...'} ({status.fetchedBatches} batches)</p>
+                <p className="status-hint">First-time setup - this data will be cached locally...</p>
+              </div>
+            </div>
+          )}
+
+          {status.phase === 'decompressing' && (
+            <div className="status-section">
+              <div className="status-header">
+                <div className="spinner"></div>
+                <h3>Decompressing Data...</h3>
+              </div>
+              <div className="status-details">
+                <p className="status-hint">Unzipping compressed catalog file...</p>
+                {status.elapsedSeconds !== undefined && (
+                  <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {status.phase === 'parsing' && (
+            <div className="status-section">
+              <div className="status-header">
+                <div className="spinner"></div>
+                <h3>Parsing Studies...</h3>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${status.totalInDatabase > 0 ? (status.totalStudiesFetched / status.totalInDatabase) * 100 : 0}%` }}
+                ></div>
+              </div>
+              <div className="status-details">
+                <p>Parsed: <strong>{status.totalStudiesFetched.toLocaleString()}</strong> / {status.totalInDatabase.toLocaleString()} lines</p>
+                {status.elapsedSeconds !== undefined && (
+                  <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {status.phase === 'storing' && (
+            <div className="status-section">
+              <div className="status-header">
+                <div className="spinner"></div>
+                <h3>Storing in Local Database...</h3>
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${status.totalInDatabase > 0 ? (status.totalStudiesFetched / status.totalInDatabase) * 100 : 0}%` }}
+                ></div>
+              </div>
+              <div className="status-details">
+                <p>Stored: <strong>{status.totalStudiesFetched.toLocaleString()}</strong> / {status.totalInDatabase.toLocaleString()} studies</p>
+                {status.elapsedSeconds !== undefined && (
+                  <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {status.phase === 'analyzing' && (
+            <div className="status-section">
+              <div className="status-header">
+                <div className="spinner"></div>
+                <h3>Analyzing Studies...</h3>
+              </div>
+              <div className="status-details">
+                <p>Total studies: <strong>{status.totalInDatabase.toLocaleString()}</strong></p>
                 <p>Matching your SNPs: <strong>{status.matchingStudies.toLocaleString()}</strong> analyzed ({status.matchCount.toLocaleString()} matches)</p>
                 {status.elapsedSeconds !== undefined && (
                   <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
                 )}
-                {status.etaSeconds !== undefined && (
-                  <p>ETA: <strong>{status.etaSeconds > 0 ? formatTime(status.etaSeconds) : 'Calculating...'}</strong></p>
-                )}
-                <p className="status-hint">Analysis happens instantly as studies are downloaded...</p>
+                <p className="status-hint">Processing sequentially to minimize memory usage...</p>
               </div>
             </div>
           )}

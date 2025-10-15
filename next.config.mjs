@@ -6,8 +6,17 @@ const __dirname = path.dirname(__filename);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true, // Enable gzip compression for API responses
   experimental: {
     optimizePackageImports: ["react", "react-dom"]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/favicon.ico',
+        destination: '/icon.svg',
+      },
+    ];
   },
   webpack: (config, { isServer }) => {
     // Reduce file watching overhead - prevent watching parent directories

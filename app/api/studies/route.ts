@@ -238,9 +238,9 @@ export async function GET(request: NextRequest) {
 
   // Special parameter for "Run All" - fetches all studies with SNPs
   const fetchAll = searchParams.get("fetchAll") === "true";
-  // Allow larger batches for pagination (up to 50000 for Run All), or unlimited for fetchAll
+  // Allow larger batches for pagination (up to 100000 for Run All with fetchAll)
   const requestedLimit = Number(searchParams.get("limit")) || 75;
-  const limit = fetchAll ? 999999 : Math.max(10, Math.min(requestedLimit, 50000));
+  const limit = fetchAll ? Math.max(10, Math.min(requestedLimit, 100000)) : Math.max(10, Math.min(requestedLimit, 50000));
   const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
 
   const sort = searchParams.get("sort") ?? "relevance";
@@ -422,6 +422,27 @@ export async function GET(request: NextRequest) {
   }
 
   const finalResults = sortedStudies.slice(0, limit);
+
+  // For Run All queries, return minimal payload to avoid JSON serialization limits
+  if (isRunAllQuery) {
+    const minimalResults = finalResults.map(s => ({
+      id: s.id,
+      study_accession: s.study_accession,
+      disease_trait: s.disease_trait,
+      study: s.study,
+      snps: s.snps,
+      strongest_snp_risk_allele: s.strongest_snp_risk_allele,
+      or_or_beta: s.or_or_beta,
+    }));
+
+    return NextResponse.json({
+      data: minimalResults,
+      total: studies.length,
+      limit,
+      truncated: studies.length > finalResults.length,
+      sourceCount,
+    });
+  }
 
     return NextResponse.json({
       data: finalResults,

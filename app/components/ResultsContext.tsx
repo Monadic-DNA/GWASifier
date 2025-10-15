@@ -6,6 +6,7 @@ import { SavedResult, SavedSession, ResultsManager } from "@/lib/results-manager
 type ResultsContextType = {
   savedResults: SavedResult[];
   addResult: (result: SavedResult) => void;
+  addResultsBatch: (results: SavedResult[]) => void;
   removeResult: (studyId: number) => void;
   clearResults: () => void;
   saveToFile: (genotypeSize?: number, genotypeHash?: string) => void;
@@ -28,6 +29,20 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     setSavedResults(prev => {
       const filtered = prev.filter(r => r.studyId !== result.studyId);
       return [...filtered, result];
+    });
+  };
+
+  const addResultsBatch = (results: SavedResult[]) => {
+    setSavedResults(prev => {
+      // Create a map of existing results by studyId for O(1) lookup
+      const existingMap = new Map(prev.map(r => [r.studyId, r]));
+
+      // Add/update with new results
+      for (const result of results) {
+        existingMap.set(result.studyId, result);
+      }
+
+      return Array.from(existingMap.values());
     });
   };
 
@@ -93,6 +108,7 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     <ResultsContext.Provider value={{
       savedResults,
       addResult,
+      addResultsBatch,
       removeResult,
       clearResults,
       saveToFile,

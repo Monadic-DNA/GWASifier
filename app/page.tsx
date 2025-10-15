@@ -187,7 +187,7 @@ function buildQuery(filters: Filters): string {
 
 function MainContent() {
   const { genotypeData, isUploaded, setOnDataLoadedCallback } = useGenotype();
-  const { setOnResultsLoadedCallback, addResult, hasResult } = useResults();
+  const { setOnResultsLoadedCallback, addResult, addResultsBatch, hasResult } = useResults();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [debouncedSearch, setDebouncedSearch] = useState<string>(defaultFilters.search);
   const [traits, setTraits] = useState<string[]>([]);
@@ -428,24 +428,31 @@ function MainContent() {
   };
 
   const handleRunAll = async () => {
-    if (!genotypeData || !isUploaded) {
-      alert("Please upload your genetic data first");
-      return;
-    }
-
-    // Get list of user's SNPs
-    const userSnps = Array.from(genotypeData.keys());
-
-    if (userSnps.length === 0) {
+    if (!genotypeData || genotypeData.size === 0) {
       alert("No SNPs found in your genetic data");
       return;
     }
 
-    const confirmRun = window.confirm(
-      `This will analyze ALL studies in the database where you have matching SNPs. This may take several minutes. Continue?`
-    );
+    // Check if we need to download the catalog first
+    const { gwasDB } = await import('@/lib/gwas-db');
+    const metadata = await gwasDB.getMetadata();
 
-    if (!confirmRun) return;
+    if (!metadata) {
+      const confirmDownload = window.confirm(
+        `First-time setup: Download ~54MB GWAS Catalog data?\n\n` +
+        `This will be cached locally for instant future analysis.\n` +
+        `Estimated storage: ~500MB after decompression.\n\n` +
+        `Continue?`
+      );
+      if (!confirmDownload) return;
+    } else {
+      const confirmRun = window.confirm(
+        `Analyze all ${metadata.totalStudies.toLocaleString()} studies where you have matching SNPs?\n\n` +
+        `Using cached data from ${new Date(metadata.downloadDate).toLocaleDateString()}\n\n` +
+        `Continue?`
+      );
+      if (!confirmRun) return;
+    }
 
     // Initialize and show modal
     setIsRunningAll(true);
@@ -465,186 +472,34 @@ function MainContent() {
     setRunAllProgress({ current: 0, total: 0 });
 
     try {
-      // Process each batch immediately without queuing - true streaming
-      const batchSize = 10000; // Smaller batches to reduce memory pressure
-      let offset = 0;
-      let fetchedBatches = 0;
-      let totalInDatabase = 0;
-      let totalMatchingStudies = 0;
-      let processedCount = 0;
-      let matchCount = 0;
+      // Use IndexedDB-based implementation
+      const { runAllAnalysisIndexed } = await import('@/lib/run-all-indexed');
 
-      // EMA for rate calculation - smoother ETA
-      let smoothedRate = 0;
-      const smoothingFactor = 0.3;
+      const results = await runAllAnalysisIndexed(
+        genotypeData,
+        (progress) => {
+          setRunAllStatus(prev => ({
+            ...prev,
+            phase: progress.phase,
+            totalStudiesFetched: progress.loaded,
+            totalInDatabase: progress.total,
+            matchingStudies: progress.matchingStudies,
+            matchCount: progress.matchCount,
+            elapsedSeconds: progress.elapsedSeconds,
+            fetchedBatches: 0,
+            processedCount: progress.matchingStudies,
+            totalToProcess: progress.matchingStudies,
+          }));
+        },
+        hasResult
+      );
 
-      // Start in analyzing phase immediately
-      setRunAllStatus(prev => ({
-        ...prev,
-        phase: 'analyzing',
-        totalToProcess: 0,
-        startTime,
-      }));
-
-      // Fetch and process batches sequentially to control memory
-      while (true) {
-        const response = await fetch(
-          `/api/studies?limit=${batchSize}&excludeLowQuality=false&excludeMissingGenotype=false&offset=${offset}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch studies batch at offset ${offset}`);
-        }
-
-        const data: StudiesResponse = await response.json();
-        fetchedBatches++;
-
-        // Get total count from first batch
-        if (offset === 0 && data.sourceCount) {
-          totalInDatabase = data.sourceCount;
-        }
-
-        // Process each study directly - no intermediate arrays
-        for (const study of data.data) {
-          // Quick filter: check if has SNPs matching user
-          if (!study.snps || !hasMatchingSNPs(genotypeData, study.snps)) {
-            continue;
-          }
-
-          totalMatchingStudies++;
-
-          // Skip if already analyzed
-          if (hasResult(study.id)) {
-            processedCount++;
-            continue;
-          }
-
-          // Skip if no risk allele or effect size
-          if (!study.strongest_snp_risk_allele || !study.or_or_beta) {
-            processedCount++;
-            continue;
-          }
-
-          try {
-            // Perform client-side analysis
-            const analysisResult = analyzeStudyClientSide(
-              genotypeData,
-              study.snps,
-              study.strongest_snp_risk_allele,
-              study.or_or_beta,
-              study.study_accession,
-              'OR',
-              null
-            );
-
-            // Save result if there's a match
-            if (analysisResult.hasMatch) {
-              const trait = study.mapped_trait ?? study.disease_trait ?? "Unknown trait";
-              addResult({
-                studyId: study.id,
-                gwasId: study.study_accession || undefined,
-                traitName: trait,
-                studyTitle: study.study || "Untitled study",
-                userGenotype: analysisResult.userGenotype!,
-                riskAllele: analysisResult.riskAllele!,
-                effectSize: analysisResult.effectSize!,
-                riskScore: analysisResult.riskScore!,
-                riskLevel: analysisResult.riskLevel!,
-                matchedSnp: analysisResult.matchedSnp!,
-                analysisDate: new Date().toISOString(),
-              });
-              matchCount++;
-            }
-          } catch (err) {
-            console.error(`Failed to analyze study ${study.id}:`, err);
-          }
-
-          processedCount++;
-
-          // Update progress every 500 studies and yield to browser
-          if (processedCount % 500 === 0) {
-            const elapsedMs = Date.now() - startTime;
-            const elapsedSeconds = elapsedMs / 1000;
-
-            // Calculate ETA only after 3+ batches for accuracy
-            let etaSeconds = 0;
-            if (fetchedBatches >= 3 && totalInDatabase > 0) {
-              const instantRate = (offset + data.data.length) / elapsedSeconds;
-              // Exponential moving average for smoother rate
-              smoothedRate = smoothedRate === 0
-                ? instantRate
-                : (smoothingFactor * instantRate) + ((1 - smoothingFactor) * smoothedRate);
-
-              const remainingStudies = totalInDatabase - (offset + data.data.length);
-              // Add 20% safety buffer for slowdown
-              etaSeconds = smoothedRate > 0 ? (remainingStudies / smoothedRate) * 1.2 : 0;
-            }
-
-            setRunAllProgress({ current: processedCount, total: totalMatchingStudies });
-            setRunAllStatus(prev => ({
-              ...prev,
-              fetchedBatches,
-              totalStudiesFetched: offset + data.data.length,
-              totalInDatabase,
-              matchingStudies: totalMatchingStudies,
-              processedCount,
-              matchCount,
-              totalToProcess: totalMatchingStudies,
-              elapsedSeconds,
-              etaSeconds,
-            }));
-            // Yield to browser to prevent UI freeze and allow GC
-            await new Promise(resolve => setTimeout(resolve, 0));
-          }
-        }
-
-        // Update status after this batch with timing
-        const elapsedMs = Date.now() - startTime;
-        const elapsedSeconds = elapsedMs / 1000;
-
-        // Calculate ETA only after 3+ batches for accuracy
-        let etaSeconds = 0;
-        if (fetchedBatches >= 3 && totalInDatabase > 0) {
-          const instantRate = (offset + data.data.length) / elapsedSeconds;
-          // Exponential moving average for smoother rate
-          smoothedRate = smoothedRate === 0
-            ? instantRate
-            : (smoothingFactor * instantRate) + ((1 - smoothingFactor) * smoothedRate);
-
-          const remainingStudies = totalInDatabase - (offset + data.data.length);
-          // Add 20% safety buffer for slowdown
-          etaSeconds = smoothedRate > 0 ? (remainingStudies / smoothedRate) * 1.2 : 0;
-        }
-
-        setRunAllProgress({ current: offset + data.data.length, total: totalInDatabase });
-        setRunAllStatus(prev => ({
-          ...prev,
-          fetchedBatches,
-          totalStudiesFetched: offset + data.data.length,
-          totalInDatabase,
-          matchingStudies: totalMatchingStudies,
-          processedCount,
-          matchCount,
-          totalToProcess: totalMatchingStudies,
-          elapsedSeconds,
-          etaSeconds,
-        }));
-
-        // Stop if we got fewer results than requested OR we've reached the total count
-        if (data.data.length < batchSize || (totalInDatabase > 0 && offset + data.data.length >= totalInDatabase)) {
-          break;
-        }
-
-        offset += batchSize;
-      }
-
-      // Complete - preserve final elapsed time
-      const finalElapsedSeconds = (Date.now() - startTime) / 1000;
-      setRunAllStatus(prev => ({
-        ...prev,
-        phase: 'complete',
-        elapsedSeconds: finalElapsedSeconds,
-      }));
+      // Add all results in one efficient batch operation
+      console.log(`Adding ${results.length} results to the results manager...`);
+      const startAdd = Date.now();
+      addResultsBatch(results);
+      const addTime = Date.now() - startAdd;
+      console.log(`Finished adding ${results.length} results in ${addTime}ms`);
     } catch (error) {
       console.error('Run All failed:', error);
       setRunAllStatus(prev => ({
@@ -940,7 +795,7 @@ function MainContent() {
               </tr>
             )}
             {!loading &&
-              studies.map((study) => {
+              studies.map((study, index) => {
                 const trait = study.mapped_trait ?? study.disease_trait ?? "—";
                 const date = study.publicationDate
                   ? new Date(study.publicationDate).toLocaleDateString()
@@ -968,7 +823,7 @@ function MainContent() {
                     ? "Medium confidence"
                     : "Lower confidence";
                 return (
-                  <tr key={study.id} className={study.isLowQuality ? "low-quality" : undefined}>
+                  <tr key={`${study.id}-${index}`} className={study.isLowQuality ? "low-quality" : undefined}>
                     <td data-label="Study">
                       <div className="study-title">
                         {studyLink ? (

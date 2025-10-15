@@ -16,6 +16,7 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
   const { savedResults, saveToFile, loadFromFile, clearResults } = useResults();
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [cacheInfo, setCacheInfo] = useState<{ studies: number; sizeMB: number } | null>(null);
 
   useEffect(() => {
     // Detect system preference on mount
@@ -26,6 +27,20 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
     // Apply initial theme
     document.documentElement.setAttribute("data-theme", initialTheme);
     document.documentElement.style.colorScheme = initialTheme;
+
+    // Load cache info
+    const loadCacheInfo = async () => {
+      const { gwasDB } = await import('@/lib/gwas-db');
+      const metadata = await gwasDB.getMetadata();
+      if (metadata) {
+        const size = await gwasDB.getStorageSize();
+        setCacheInfo({
+          studies: metadata.totalStudies,
+          sizeMB: Math.round(size / 1024 / 1024)
+        });
+      }
+    };
+    loadCacheInfo();
   }, []);
 
   useEffect(() => {
@@ -126,7 +141,7 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
                     <button
                       className="control-button save"
                       onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
-                      title="Export your results to a JSON file"
+                      title="Export your results to a TSV file"
                     >
                       <SaveIcon size={14} /> Export
                     </button>
@@ -147,6 +162,33 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
         <div className="menu-separator" />
 
         <div className="utility-section menu-group">
+          {cacheInfo && (
+            <>
+              <span className="stat-item">
+                {cacheInfo.studies.toLocaleString()} studies cached ({cacheInfo.sizeMB} MB)
+              </span>
+              <button
+                className="control-button"
+                onClick={async () => {
+                  const confirmed = window.confirm(
+                    `Clear cached GWAS Catalog data?\n\n` +
+                    `${cacheInfo.studies.toLocaleString()} studies (${cacheInfo.sizeMB} MB)\n\n` +
+                    `Data will be re-downloaded on next Run All.`
+                  );
+                  if (confirmed) {
+                    const { gwasDB } = await import('@/lib/gwas-db');
+                    await gwasDB.clearDatabase();
+                    setCacheInfo(null);
+                    alert('Cache cleared successfully!');
+                  }
+                }}
+                title="Clear locally cached GWAS catalog data"
+              >
+                <TrashIcon size={14} /> Clear Cache
+              </button>
+            </>
+          )}
+
           <a
             href="https://recherche.discourse.group/c/public/monadic-dna/30"
             target="_blank"
