@@ -27,19 +27,32 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
 
   const addResult = (result: SavedResult) => {
     setSavedResults(prev => {
-      const filtered = prev.filter(r => r.studyId !== result.studyId);
+      // Remove existing result with same gwasId (preferred) or studyId (fallback)
+      const filtered = prev.filter(r => {
+        if (result.gwasId && r.gwasId) {
+          return r.gwasId !== result.gwasId; // Dedupe by GWAS ID
+        }
+        return r.studyId !== result.studyId; // Fallback to studyId
+      });
       return [...filtered, result];
     });
   };
 
   const addResultsBatch = (results: SavedResult[]) => {
     setSavedResults(prev => {
-      // Create a map of existing results by studyId for O(1) lookup
-      const existingMap = new Map(prev.map(r => [r.studyId, r]));
+      // Create a map keyed by gwasId (or studyId as fallback) for deduplication
+      const existingMap = new Map<string, SavedResult>();
 
-      // Add/update with new results
+      // Add existing results
+      for (const r of prev) {
+        const key = r.gwasId || `id_${r.studyId}`;
+        existingMap.set(key, r);
+      }
+
+      // Add/update with new results (gwasId takes precedence)
       for (const result of results) {
-        existingMap.set(result.studyId, result);
+        const key = result.gwasId || `id_${result.studyId}`;
+        existingMap.set(key, result);
       }
 
       return Array.from(existingMap.values());

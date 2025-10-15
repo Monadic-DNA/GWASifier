@@ -12,12 +12,13 @@ import { trackStudyResultReveal } from "@/lib/analytics";
 
 type StudyResultRevealProps = {
   studyId: number;
+  studyAccession: string | null;
   snps: string | null;
   traitName: string;
   studyTitle: string;
 };
 
-export default function StudyResultReveal({ studyId, snps, traitName, studyTitle }: StudyResultRevealProps) {
+export default function StudyResultReveal({ studyId, studyAccession, snps, traitName, studyTitle }: StudyResultRevealProps) {
   const { genotypeData, isUploaded } = useGenotype();
   const { addResult, hasResult, getResult, savedResults } = useResults();
   const [result, setResult] = useState<UserStudyResult | null>(null);
@@ -27,24 +28,37 @@ export default function StudyResultReveal({ studyId, snps, traitName, studyTitle
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showCommentary, setShowCommentary] = useState(false);
 
-  // Check if we already have a saved result
+  // Check if we already have a saved result (check by studyAccession for Run All results, fallback to studyId)
   useEffect(() => {
-    if (hasResult(studyId)) {
-      const savedResult = getResult(studyId);
-      if (savedResult) {
-        setResult({
-          hasMatch: true,
-          userGenotype: savedResult.userGenotype,
-          riskAllele: savedResult.riskAllele,
-          effectSize: savedResult.effectSize,
-          riskScore: savedResult.riskScore,
-          riskLevel: savedResult.riskLevel,
-          matchedSnp: savedResult.matchedSnp,
-        });
-        setIsRevealed(true);
-      }
+    console.log(`[Study ${studyAccession || studyId}] Checking for saved result. Total results: ${savedResults.length}`);
+
+    // First try to find by studyAccession (gwasId) - used by Run All
+    let savedResult = studyAccession ? savedResults.find(r => r.gwasId === studyAccession) : undefined;
+
+    // Fallback to studyId for individually revealed results
+    if (!savedResult && hasResult(studyId)) {
+      savedResult = getResult(studyId);
     }
-  }, [studyId, hasResult, getResult]);
+
+    if (savedResult) {
+      console.log(`[Study ${studyAccession || studyId}] Found saved result:`, savedResult);
+      setResult({
+        hasMatch: true,
+        userGenotype: savedResult.userGenotype,
+        riskAllele: savedResult.riskAllele,
+        effectSize: savedResult.effectSize,
+        riskScore: savedResult.riskScore,
+        riskLevel: savedResult.riskLevel,
+        matchedSnp: savedResult.matchedSnp,
+      });
+      setIsRevealed(true);
+    } else {
+      console.log(`[Study ${studyAccession || studyId}] No saved result found`);
+      // Reset if result was removed
+      setResult(null);
+      setIsRevealed(false);
+    }
+  }, [studyId, studyAccession, savedResults.length, hasResult, getResult, savedResults]);
 
   const handleRevealClick = () => {
     setShowDisclaimer(true);

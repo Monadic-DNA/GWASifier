@@ -106,7 +106,7 @@ export default function RunAllModal({ isOpen, onClose, status }: RunAllModalProp
             <div className="status-section">
               <div className="status-header">
                 <div className="spinner"></div>
-                <h3>Storing in Local Database...</h3>
+                <h3>Storing in Browser IndexedDB...</h3>
               </div>
               <div className="progress-bar">
                 <div
@@ -119,6 +119,7 @@ export default function RunAllModal({ isOpen, onClose, status }: RunAllModalProp
                 {status.elapsedSeconds !== undefined && (
                   <p>Elapsed: <strong>{formatTime(status.elapsedSeconds)}</strong></p>
                 )}
+                <p className="status-hint">Caching GWAS catalog locally for faster future analysis...</p>
               </div>
             </div>
           )}

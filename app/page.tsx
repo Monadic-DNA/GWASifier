@@ -897,6 +897,7 @@ function MainContent() {
                     <td data-label="Your Result">
                       <StudyResultReveal
                         studyId={study.id}
+                        studyAccession={study.study_accession}
                         snps={study.snps}
                         traitName={trait}
                         studyTitle={study.study || "Untitled study"}

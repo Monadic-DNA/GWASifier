@@ -176,10 +176,29 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
                     `Data will be re-downloaded on next Run All.`
                   );
                   if (confirmed) {
-                    const { gwasDB } = await import('@/lib/gwas-db');
-                    await gwasDB.clearDatabase();
-                    setCacheInfo(null);
-                    alert('Cache cleared successfully!');
+                    try {
+                      // Show loading state
+                      const button = document.activeElement as HTMLButtonElement;
+                      const originalText = button?.innerHTML;
+                      if (button) {
+                        button.disabled = true;
+                        button.innerHTML = '<div class="spinner" style="width: 14px; height: 14px; margin-right: 6px;"></div> Clearing...';
+                      }
+
+                      const { gwasDB } = await import('@/lib/gwas-db');
+                      await gwasDB.clearDatabase();
+                      setCacheInfo(null);
+
+                      // Restore button and show success
+                      if (button && originalText) {
+                        button.disabled = false;
+                        button.innerHTML = originalText;
+                      }
+                      alert('✓ Cache cleared successfully!');
+                    } catch (error) {
+                      console.error('Failed to clear cache:', error);
+                      alert('Failed to clear cache. Please try again.');
+                    }
                   }
                 }}
                 title="Clear locally cached GWAS catalog data"
