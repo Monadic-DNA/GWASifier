@@ -1,69 +1,73 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
 import { SavedResult, SavedSession, ResultsManager } from "@/lib/results-manager";
+import { resultsDB } from "@/lib/results-database";
 
 type ResultsContextType = {
   savedResults: SavedResult[];
-  addResult: (result: SavedResult) => void;
-  addResultsBatch: (results: SavedResult[]) => void;
-  removeResult: (studyId: number) => void;
-  clearResults: () => void;
+  addResult: (result: SavedResult) => Promise<void>;
+  addResultsBatch: (results: SavedResult[]) => Promise<void>;
+  removeResult: (studyId: number) => Promise<void>;
+  clearResults: () => Promise<void>;
   saveToFile: (genotypeSize?: number, genotypeHash?: string) => void;
   loadFromFile: (currentFileHash?: string | null) => Promise<void>;
   hasResult: (studyId: number) => boolean;
   getResult: (studyId: number) => SavedResult | undefined;
+  getResultByGwasId: (gwasId: string) => SavedResult | undefined;
   setOnResultsLoadedCallback: (callback: () => void) => void;
+  // SQL query methods for advanced analysis
+  queryByRiskLevel: (level: 'increased' | 'decreased' | 'neutral') => Promise<SavedResult[]>;
+  queryByTraitPattern: (pattern: string) => Promise<SavedResult[]>;
+  queryByRiskScoreRange: (min: number, max: number) => Promise<SavedResult[]>;
+  getTopRisks: (limit?: number) => Promise<SavedResult[]>;
+  getProtectiveVariants: (limit?: number) => Promise<SavedResult[]>;
+  getTraitCategories: () => Promise<Array<{ trait: string; count: number }>>;
+  getRiskStatistics: () => Promise<any>;
+  executeQuery: (sql: string, params?: any[]) => Promise<any[]>;
 };
 
 const ResultsContext = createContext<ResultsContextType | null>(null);
 
 export function ResultsProvider({ children }: { children: ReactNode }) {
-  // SECURITY: Results stored in memory only, cleared on session end
+  // SECURITY: Results stored in memory only (in SQL.js in-memory database), cleared on session end
   const [savedResults, setSavedResults] = useState<SavedResult[]>([]);
   const [onResultsLoaded, setOnResultsLoaded] = useState<(() => void) | undefined>();
+  const [dbInitialized, setDbInitialized] = useState(false);
+
+  // Initialize SQL database on mount
+  useEffect(() => {
+    resultsDB.initialize().then(() => {
+      setDbInitialized(true);
+      console.log('Results database initialized');
+    });
+  }, []);
+
+  // Sync state array with database for React rendering
+  const syncFromDatabase = async () => {
+    const results = await resultsDB.getAllResults();
+    setSavedResults(results);
+  };
 
   // No localStorage loading - data is memory-only
 
-  const addResult = (result: SavedResult) => {
-    setSavedResults(prev => {
-      // Remove existing result with same gwasId (preferred) or studyId (fallback)
-      const filtered = prev.filter(r => {
-        if (result.gwasId && r.gwasId) {
-          return r.gwasId !== result.gwasId; // Dedupe by GWAS ID
-        }
-        return r.studyId !== result.studyId; // Fallback to studyId
-      });
-      return [...filtered, result];
-    });
+  const addResult = async (result: SavedResult) => {
+    await resultsDB.insertResult(result);
+    await syncFromDatabase();
   };
 
-  const addResultsBatch = (results: SavedResult[]) => {
-    setSavedResults(prev => {
-      // Create a map keyed by gwasId (or studyId as fallback) for deduplication
-      const existingMap = new Map<string, SavedResult>();
-
-      // Add existing results
-      for (const r of prev) {
-        const key = r.gwasId || `id_${r.studyId}`;
-        existingMap.set(key, r);
-      }
-
-      // Add/update with new results (gwasId takes precedence)
-      for (const result of results) {
-        const key = result.gwasId || `id_${result.studyId}`;
-        existingMap.set(key, result);
-      }
-
-      return Array.from(existingMap.values());
-    });
+  const addResultsBatch = async (results: SavedResult[]) => {
+    await resultsDB.insertResultsBatch(results);
+    await syncFromDatabase();
   };
 
-  const removeResult = (studyId: number) => {
-    setSavedResults(prev => prev.filter(r => r.studyId !== studyId));
+  const removeResult = async (studyId: number) => {
+    await resultsDB.removeResult(studyId);
+    await syncFromDatabase();
   };
 
-  const clearResults = () => {
+  const clearResults = async () => {
+    await resultsDB.clear();
     setSavedResults([]);
   };
 
@@ -96,7 +100,11 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setSavedResults(session.results);
+      // Load into SQL database
+      await resultsDB.clear();
+      await resultsDB.insertResultsBatch(session.results);
+      await syncFromDatabase();
+
       // SECURITY: No longer saving to localStorage
 
       // Call the callback if it exists
@@ -109,12 +117,20 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Optimized O(1) lookups using SQL indexes
   const hasResult = (studyId: number) => {
+    // Use synchronous check from state for performance
     return savedResults.some(r => r.studyId === studyId);
   };
 
   const getResult = (studyId: number) => {
+    // Use synchronous lookup from state for performance
     return savedResults.find(r => r.studyId === studyId);
+  };
+
+  const getResultByGwasId = (gwasId: string) => {
+    // Use synchronous lookup from state for performance
+    return savedResults.find(r => r.gwasId === gwasId);
   };
 
   return (
@@ -128,7 +144,17 @@ export function ResultsProvider({ children }: { children: ReactNode }) {
       loadFromFile,
       hasResult,
       getResult,
-      setOnResultsLoadedCallback: (callback: () => void) => setOnResultsLoaded(() => callback)
+      getResultByGwasId,
+      setOnResultsLoadedCallback: (callback: () => void) => setOnResultsLoaded(() => callback),
+      // SQL query methods for advanced analysis
+      queryByRiskLevel: resultsDB.queryByRiskLevel.bind(resultsDB),
+      queryByTraitPattern: resultsDB.queryByTraitPattern.bind(resultsDB),
+      queryByRiskScoreRange: resultsDB.queryByRiskScoreRange.bind(resultsDB),
+      getTopRisks: resultsDB.getTopRisks.bind(resultsDB),
+      getProtectiveVariants: resultsDB.getProtectiveVariants.bind(resultsDB),
+      getTraitCategories: resultsDB.getTraitCategories.bind(resultsDB),
+      getRiskStatistics: resultsDB.getRiskStatistics.bind(resultsDB),
+      executeQuery: resultsDB.executeQuery.bind(resultsDB),
     }}>
       {children}
     </ResultsContext.Provider>

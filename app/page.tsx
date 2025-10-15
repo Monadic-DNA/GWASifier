@@ -205,6 +205,7 @@ function MainContent() {
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [runAllProgress, setRunAllProgress] = useState({ current: 0, total: 0 });
   const [showRunAllModal, setShowRunAllModal] = useState(false);
+  const [showRunAllDisclaimer, setShowRunAllDisclaimer] = useState(false);
   const [runAllStatus, setRunAllStatus] = useState<{
     phase: 'fetching' | 'analyzing' | 'complete' | 'error';
     fetchedBatches: number;
@@ -427,11 +428,18 @@ function MainContent() {
     }
   };
 
-  const handleRunAll = async () => {
+  const handleRunAll = () => {
     if (!genotypeData || genotypeData.size === 0) {
       alert("No SNPs found in your genetic data");
       return;
     }
+
+    // Show disclaimer first
+    setShowRunAllDisclaimer(true);
+  };
+
+  const handleRunAllDisclaimerAccept = async () => {
+    setShowRunAllDisclaimer(false);
 
     // Check if we need to download the catalog first
     const { gwasDB } = await import('@/lib/gwas-db');
@@ -497,7 +505,7 @@ function MainContent() {
       // Add all results in one efficient batch operation
       console.log(`Adding ${results.length} results to the results manager...`);
       const startAdd = Date.now();
-      addResultsBatch(results);
+      await addResultsBatch(results);
       const addTime = Date.now() - startAdd;
       console.log(`Finished adding ${results.length} results in ${addTime}ms`);
     } catch (error) {
@@ -912,6 +920,11 @@ function MainContent() {
       </section>
       </main>
       <Footer />
+      <DisclaimerModal
+        isOpen={showRunAllDisclaimer}
+        onClose={() => setShowRunAllDisclaimer(false)}
+        onAccept={handleRunAllDisclaimerAccept}
+      />
       <RunAllModal
         isOpen={showRunAllModal}
         onClose={() => setShowRunAllModal(false)}

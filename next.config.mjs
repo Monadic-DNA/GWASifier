@@ -31,6 +31,17 @@ const nextConfig = {
       ],
       aggregateTimeout: 300,
     };
+
+    // Fix sql.js Node.js polyfills for browser-only usage
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+
     return config;
   },
 };

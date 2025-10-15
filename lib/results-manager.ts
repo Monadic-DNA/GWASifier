@@ -76,7 +76,7 @@ export class ResultsManager {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.json';
+      input.accept = '.tsv,.json';
 
       input.onchange = (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -89,12 +89,65 @@ export class ResultsManager {
         reader.onload = (e) => {
           try {
             const content = e.target?.result as string;
-            const session = JSON.parse(content) as SavedSession;
 
-            // Validate the structure
-            if (!session.results || !Array.isArray(session.results)) {
-              throw new Error('Invalid file format');
+            // Try to parse as JSON first (for backward compatibility)
+            if (file.name.endsWith('.json')) {
+              const session = JSON.parse(content) as SavedSession;
+
+              // Validate the structure
+              if (!session.results || !Array.isArray(session.results)) {
+                throw new Error('Invalid file format');
+              }
+
+              resolve(session);
+              return;
             }
+
+            // Parse TSV format
+            const lines = content.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+              throw new Error('File is empty or has no data rows');
+            }
+
+            const headers = lines[0].split('\t');
+
+            // Validate headers
+            const expectedHeaders = ['Study ID', 'GWAS ID', 'Trait Name', 'Study Title', 'Your Genotype',
+                                      'Risk Allele', 'Effect Size', 'Risk Score', 'Risk Level',
+                                      'Matched SNP', 'Analysis Date'];
+
+            const headerCheck = expectedHeaders.every(h => headers.includes(h));
+            if (!headerCheck) {
+              throw new Error('Invalid TSV headers - not a valid results file');
+            }
+
+            // Parse data rows
+            const results: SavedResult[] = [];
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split('\t');
+              if (cols.length < 11) continue; // Skip incomplete rows
+
+              results.push({
+                studyId: parseInt(cols[0]) || 0,
+                gwasId: cols[1] || undefined,
+                traitName: cols[2] || '',
+                studyTitle: cols[3] || '',
+                userGenotype: cols[4] || '',
+                riskAllele: cols[5] || '',
+                effectSize: cols[6] || '',
+                riskScore: parseFloat(cols[7]) || 0,
+                riskLevel: (cols[8] as 'increased' | 'decreased' | 'neutral') || 'neutral',
+                matchedSnp: cols[9] || '',
+                analysisDate: cols[10] || '',
+              });
+            }
+
+            const session: SavedSession = {
+              fileName: file.name,
+              createdDate: new Date().toISOString(),
+              totalVariants: 0, // Not stored in TSV
+              results
+            };
 
             resolve(session);
           } catch (error) {

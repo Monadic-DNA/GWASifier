@@ -70,6 +70,35 @@ export default function LLMCommentaryModal({
     setStudyMetadata(null);
 
     try {
+      // Yield to UI to show loading state
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      setDelegationStatus("Preparing your results...");
+
+      // Construct the prompt with top 500 results by effect size, plus the current result
+      // Do this early to avoid blocking later
+      console.log(`Filtering top 500 from ${allResults.length} results...`);
+      const startFilter = Date.now();
+
+      const topResults = allResults
+        .filter(r => r.gwasId !== currentResult.gwasId) // Exclude current result temporarily
+        .sort((a, b) => {
+          // Sort by absolute distance from 1.0 (neutral) - larger effect = further from 1.0
+          const aDistance = Math.abs(a.riskScore - 1.0);
+          const bDistance = Math.abs(b.riskScore - 1.0);
+          return bDistance - aDistance;
+        })
+        .slice(0, 499); // Take top 499
+
+      // Add current result at the top
+      const resultsForContext = [currentResult, ...topResults];
+
+      const filterTime = Date.now() - startFilter;
+      console.log(`Filtered to top 500 in ${filterTime}ms`);
+
+      // Yield to UI after heavy computation
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       // First, fetch study metadata for quality indicators
       const metadataResponse = await fetch(`/api/study-metadata?studyId=${currentResult.studyId}`);
       if (metadataResponse.ok) {
@@ -109,8 +138,7 @@ export default function LLMCommentaryModal({
 
       setDelegationStatus("✓ Secure token ready — connecting directly to private AI");
 
-      // Construct the prompt with all results context
-      const contextResults = allResults
+      const contextResults = resultsForContext
         .map((r: SavedResult, idx: number) =>
           `${idx + 1}. ${r.traitName} (${r.studyTitle}):
    - Your genotype: ${r.userGenotype}

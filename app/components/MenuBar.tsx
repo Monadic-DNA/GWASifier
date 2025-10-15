@@ -56,7 +56,9 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
   const handleLoadFromFile = async () => {
     setIsLoadingFile(true);
     try {
-      await loadFromFile(fileHash);
+      // Allow loading results even without DNA file loaded
+      // fileHash will be null/undefined if no DNA file is loaded
+      await loadFromFile(fileHash || null);
     } catch (error) {
       alert('Failed to load results file: ' + (error as Error).message);
     } finally {
@@ -112,52 +114,53 @@ export default function MenuBar({ onRunAll, isRunningAll, runAllProgress }: Menu
                 )}
               </button>
             )}
-            <div className="menu-separator" />
-            <div className="results-section menu-group">
-              {savedResults.length > 0 && (
-                <span className="stat-item">
-                  {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
-                </span>
-              )}
-              <div className="results-controls">
-                <button
-                  className="control-button load"
-                  onClick={handleLoadFromFile}
-                  disabled={isLoadingFile}
-                  title="Load results from a file"
-                >
-                  {isLoadingFile ? (
-                    <>
-                      <ClockIcon size={14} /> Loading...
-                    </>
-                  ) : (
-                    <>
-                      <FileIcon size={14} /> Load
-                    </>
-                  )}
-                </button>
-                {savedResults.length > 0 && (
-                  <>
-                    <button
-                      className="control-button save"
-                      onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
-                      title="Export your results to a TSV file"
-                    >
-                      <SaveIcon size={14} /> Export
-                    </button>
-                    <button
-                      className="control-button clear"
-                      onClick={clearResults}
-                      title="Clear all saved results"
-                    >
-                      <TrashIcon size={14} /> Clear
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
           </>
         )}
+
+        <div className="menu-separator" />
+        <div className="results-section menu-group">
+          {savedResults.length > 0 && (
+            <span className="stat-item">
+              {savedResults.length} result{savedResults.length !== 1 ? 's' : ''} cached
+            </span>
+          )}
+          <div className="results-controls">
+            <button
+              className="control-button load"
+              onClick={handleLoadFromFile}
+              disabled={isLoadingFile}
+              title="Load results from a file"
+            >
+              {isLoadingFile ? (
+                <>
+                  <ClockIcon size={14} /> Loading...
+                </>
+              ) : (
+                <>
+                  <FileIcon size={14} /> Load
+                </>
+              )}
+            </button>
+            {savedResults.length > 0 && (
+              <>
+                <button
+                  className="control-button save"
+                  onClick={() => saveToFile(genotypeData?.size, fileHash || undefined)}
+                  title="Export your results to a TSV file"
+                >
+                  <SaveIcon size={14} /> Export
+                </button>
+                <button
+                  className="control-button clear"
+                  onClick={clearResults}
+                  title="Clear all saved results"
+                >
+                  <TrashIcon size={14} /> Clear
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
         <div className="menu-separator" />
 

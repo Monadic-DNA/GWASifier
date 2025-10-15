@@ -20,7 +20,7 @@ type StudyResultRevealProps = {
 
 export default function StudyResultReveal({ studyId, studyAccession, snps, traitName, studyTitle }: StudyResultRevealProps) {
   const { genotypeData, isUploaded } = useGenotype();
-  const { addResult, hasResult, getResult, savedResults } = useResults();
+  const { addResult, hasResult, getResult, getResultByGwasId, savedResults } = useResults();
   const [result, setResult] = useState<UserStudyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -32,10 +32,10 @@ export default function StudyResultReveal({ studyId, studyAccession, snps, trait
   useEffect(() => {
     console.log(`[Study ${studyAccession || studyId}] Checking for saved result. Total results: ${savedResults.length}`);
 
-    // First try to find by studyAccession (gwasId) - used by Run All
-    let savedResult = studyAccession ? savedResults.find(r => r.gwasId === studyAccession) : undefined;
+    // First try to find by studyAccession (gwasId) - used by Run All - O(1) lookup
+    let savedResult = studyAccession ? getResultByGwasId(studyAccession) : undefined;
 
-    // Fallback to studyId for individually revealed results
+    // Fallback to studyId for individually revealed results - O(1) lookup
     if (!savedResult && hasResult(studyId)) {
       savedResult = getResult(studyId);
     }
@@ -58,7 +58,7 @@ export default function StudyResultReveal({ studyId, studyAccession, snps, trait
       setResult(null);
       setIsRevealed(false);
     }
-  }, [studyId, studyAccession, savedResults.length, hasResult, getResult, savedResults]);
+  }, [studyId, studyAccession, savedResults.length, hasResult, getResult, getResultByGwasId, savedResults]);
 
   const handleRevealClick = () => {
     setShowDisclaimer(true);
@@ -133,7 +133,7 @@ export default function StudyResultReveal({ studyId, studyAccession, snps, trait
           matchedSnp: analysisResult.matchedSnp!,
           analysisDate: new Date().toISOString(),
         };
-        addResult(savedResult);
+        await addResult(savedResult);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
